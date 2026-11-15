@@ -1,0 +1,25 @@
+# conda env create -f environment.yml && conda activate cad-to-scan
+# Tested with Python 3.11, PyTorch 2.7.1 + CUDA 11.8. For another CUDA version, change the PyTorch index URL.
+name: cad-to-scan
+channels:
+  - conda-forge
+dependencies:
+  - python=3.11
+  - pip
+  - pip:
+      - --extra-index-url https://download.pytorch.org/whl/cu118
+      - torch==2.7.1
+      - numpy
+      - scipy
+      - h5py
+      - pyyaml
+      - tqdm
+      - matplotlib
+      - scikit-learn
+      - pandas
+      - plotly
+      - pillow
+      - pygments
+      - jupyter
+      - ipykernel
+      - git+https://github.com/openai/CLIP.git

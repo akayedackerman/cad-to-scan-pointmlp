@@ -86,26 +86,40 @@ Overall accuracy (%), mean of 3 seeds; in brackets the gain over source only, * 
 
 ![TTA on ScanObjectNN](outputs/figures/plots/tta_scanobjectnn.png)
 
-## Setup
+## Reproduce
 
 ```bash
-conda create -n open3d_mesh python=3.11 -y
-conda activate open3d_mesh
-pip install torch --index-url https://download.pytorch.org/whl/cu118
-pip install -r requirements.txt
-pip install reference/pointMLP-pytorch/pointnet2_ops_lib/.   # optional, CUDA FPS
+git clone https://github.com/akayedackerman/cad-to-scan-pointmlp.git
+cd cad-to-scan-pointmlp
+
+# 1. environment
+conda env create -f environment.yml
+conda activate cad-to-scan
+pip install reference/pointMLP-pytorch/pointnet2_ops_lib/.   # optional: CUDA farthest-point sampling (as in the official PointMLP training)
+
+# 2. data and trained model
+bash scripts/download_data.sh          # ModelNet40 and ModelNet10 (ScanObjectNN: see below)
+bash scripts/download_checkpoint.sh    # PointMLP, 300 epochs on ModelNet40 (GitHub release v1.0)
+
+# 3. all experiments, figures and tables
+bash run_all.sh                        # ~1 h 45 min on one GPU (CLIP ~1 h 20 min); SKIP_CLIP=1 bash run_all.sh: ~25 min
 ```
 
-Download [ModelNet40 and ModelNet10](https://modelnet.cs.princeton.edu/) to:
+ScanObjectNN is distributed by its authors after accepting their terms of use
+([ScanObjectNN](https://hkust-vgd.github.io/scanobjectnn/)). Extract `h5_files.zip` to `data/raw/ScanObjectNN/h5_files/`.
+
+Expected layout:
 
 ```
 data/raw/ModelNet40/<class>/{train,test}/*.off
 data/raw/ModelNet10/<class>/{train,test}/*.off
-data/raw/stanford/{armadillo,bunny}.off             # Stanford 3D Scanning Repository, Z-up (figures only)
-data/raw/ScanObjectNN/h5_files/{main_split,main_split_nobg}/test_objectdataset*.h5   # ScanObjectNN test sets
+data/raw/ScanObjectNN/h5_files/{main_split,main_split_nobg}/test_objectdataset*.h5
+data/raw/stanford/{armadillo,bunny}.off      # optional, one figure (Stanford 3D Scanning Repository, Z-up)
+checkpoints/pointMLP_baseline_best.pth
 ```
 
-Put the trained weights at `checkpoints/pointMLP_baseline_best.pth`. Weights are not tracked by git (use a release or Git LFS).
+To train PointMLP from scratch instead of downloading the checkpoint, see [Training](#training).
+CLIP weights are downloaded automatically on first use.
 
 ## Usage
 
@@ -212,23 +226,34 @@ Figures (`scripts/visualize.py`, colour and greyscale):
 
 ```
 configs/      training configuration
-scripts/      data preparation, visualisation, training, testing, plots
+environment.yml, requirements.txt   dependencies
+CITATIONS.bib                        BibTeX of the methods and datasets used
+scripts/      data and checkpoint download, data preparation, visualisation, training, testing, plots
 src/          model, data utilities, evaluation, CLIP classifier, rendering
 notebooks/    workshop notebook
 reference/    pointnet2_ops CUDA extension from the PointMLP repository (Apache-2.0)
 outputs/      figures, plots, logs, results
 ```
 
-## References
+## Citation
 
-- X. Ma et al. Rethinking Network Design and Local Geometry in Point Cloud: A Simple Residual MLP Framework. ICLR 2022. [Code](https://github.com/ma-xu/pointMLP-pytorch)
-- S. Katz, A. Tal, R. Basri. Direct Visibility of Point Sets. SIGGRAPH 2007.
-- R. Zhang et al. PointCLIP: Point Cloud Understanding by CLIP. CVPR 2022.
-- A. Radford et al. Learning Transferable Visual Models From Natural Language Supervision. ICML 2021.
-- Z. Wu et al. 3D ShapeNets: A Deep Representation for Volumetric Shapes. CVPR 2015.
-- Stanford 3D Scanning Repository (Armadillo, Bunny).
-- M. A. Uy et al. Revisiting Point Cloud Classification: A New Benchmark Dataset and Classification Model on Real-World Data (ScanObjectNN). ICCV 2019.
-- D. Wang et al. Tent: Fully Test-Time Adaptation by Entropy Minimization. ICLR 2021.
-- J. Liang et al. Do We Really Need to Access the Source Data? (SHOT). ICML 2020.
-- Y. Iwasawa, Y. Matsuo. Test-Time Classifier Adjustment Module for Model-Agnostic Domain Generalization (T3A). NeurIPS 2021.
-- S. Niu et al. Towards Stable Test-Time Adaptation in Dynamic Wild World (SAR). ICLR 2023.
+This project builds on the following work. If you use it, please cite them (BibTeX in [`CITATIONS.bib`](CITATIONS.bib)).
+
+| Used for | Reference |
+|---|---|
+| Model | X. Ma, C. Qin, H. You, H. Ran, Y. Fu. *Rethinking Network Design and Local Geometry in Point Cloud: A Simple Residual MLP Framework (PointMLP).* ICLR 2022. [Code](https://github.com/ma-xu/pointMLP-pytorch) |
+| Dataset | Z. Wu et al. *3D ShapeNets: A Deep Representation for Volumetric Shapes (ModelNet).* CVPR 2015. |
+| Dataset | M. A. Uy, Q.-H. Pham, B.-S. Hua, D. T. Nguyen, S.-K. Yeung. *Revisiting Point Cloud Classification: A New Benchmark Dataset and Classification Model on Real-World Data (ScanObjectNN).* ICCV 2019. |
+| Partial views | S. Katz, A. Tal, R. Basri. *Direct Visibility of Point Sets (HPR).* SIGGRAPH 2007. |
+| Zero-shot | A. Radford et al. *Learning Transferable Visual Models From Natural Language Supervision (CLIP).* ICML 2021. |
+| Zero-shot | R. Zhang et al. *PointCLIP: Point Cloud Understanding by CLIP.* CVPR 2022. |
+| Zero-shot | X. Zhu et al. *PointCLIP V2: Prompting CLIP and GPT for Powerful 3D Open-world Learning.* ICCV 2023. |
+| TTA | S. Schneider et al. *Improving Robustness Against Common Corruptions by Covariate Shift Adaptation (BN-adapt).* NeurIPS 2020. |
+| TTA | D. Wang, E. Shelhamer, S. Liu, B. Olshausen, T. Darrell. *Tent: Fully Test-Time Adaptation by Entropy Minimization.* ICLR 2021. |
+| TTA | J. Liang, D. Hu, J. Feng. *Do We Really Need to Access the Source Data? (SHOT).* ICML 2020. |
+| TTA | Y. Iwasawa, Y. Matsuo. *Test-Time Classifier Adjustment Module for Model-Agnostic Domain Generalization (T3A).* NeurIPS 2021. |
+| TTA | S. Niu et al. *Towards Stable Test-Time Adaptation in Dynamic Wild World (SAR).* ICLR 2023. |
+| Figure | The Stanford 3D Scanning Repository (Armadillo, Bunny). |
+
+`src/pointmlp.py` follows the official PointMLP implementation, and `reference/pointMLP-pytorch/pointnet2_ops_lib`
+is taken from the official repository (Apache-2.0, see its `LICENSE`).

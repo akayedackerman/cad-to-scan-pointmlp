@@ -73,6 +73,9 @@ def hpr_figures():
             labels.append(cls.replace("_", " ").title())
         for style in ["spatial", "gray"]:
             hpr_figure.figure(objects, labels, OUT / f"hpr_{ds}_{part}_{style}.png", gray=style == "gray")
+    if not all((RAW / path).exists() for path, _, _ in SHOWCASE):
+        print("data/raw/stanford/{armadillo,bunny}.off not found: car / armadillo / bunny / piano figure skipped")
+        return
     objects = [hpr_figure.prepare(RAW / path, view=view) for path, _, view in SHOWCASE]
     labels = [label for _, label, _ in SHOWCASE]
     for style in ["spatial", "gray"]:
@@ -103,6 +106,9 @@ def removal_figures():
 
 
 def scanobjectnn_figure():
+    if not (P / "scanobjectnn_obj_only.h5").exists():
+        print("ScanObjectNN not prepared: ScanObjectNN figure skipped")
+        return
     from pc_utils import SCANOBJECTNN_SHARED
     classes = list(SCANOBJECTNN_SHARED)
     variants = {"obj_only": "OBJ_ONLY", "obj_bg": "OBJ_BG", "pb_t50_rs": "PB_T50_RS"}
