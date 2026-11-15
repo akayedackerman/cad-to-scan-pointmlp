@@ -257,3 +257,9 @@ This project builds on the following work. If you use it, please cite them (BibT
 
 `src/pointmlp.py` follows the official PointMLP implementation, and `reference/pointMLP-pytorch/pointnet2_ops_lib`
 is taken from the official repository (Apache-2.0, see its `LICENSE`).
+
+## License
+
+MIT, see [`LICENSE`](LICENSE). `reference/pointMLP-pytorch/pointnet2_ops_lib` is from the official PointMLP repository
+and keeps its Apache-2.0 license (`reference/pointMLP-pytorch/LICENSE`). The datasets (ModelNet, ScanObjectNN,
+Stanford 3D Scanning Repository) are not included and are subject to their own terms of use.
