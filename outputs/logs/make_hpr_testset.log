@@ -1,2 +1,0 @@
-$ python scripts/make_hpr_testset.py --datasets modelnet40
-modelnet40: 2468 objects | visible 11781 / 32768 points on average (36.0%; min 3417, max 32768) | objects with < 2048 visible points: 0, < 1024: 0

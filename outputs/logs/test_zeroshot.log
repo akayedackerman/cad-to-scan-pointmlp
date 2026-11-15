@@ -1,6 +1,0 @@
-$ python scripts/test_zeroshot.py
-checkpoint: checkpoints/pointMLP_baseline_best.pth
-[zeroshot] modelnet40 hpr_1024   OA 66.98%  mAcc 65.80%  (n=2468)
-[zeroshot] modelnet40 hpr_2048   OA 64.10%  mAcc 62.96%  (n=2468)
-[zeroshot] modelnet40 hpr_raw    OA 51.54%  mAcc 48.37%  (n=2468)
-saved -> outputs/results/zeroshot_results.json

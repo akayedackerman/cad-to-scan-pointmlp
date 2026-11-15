@@ -9,7 +9,7 @@ Workshop material for 3D object classification on ModelNet40 with PointMLP.
 - Model training
 - Model testing (supervised and zero-shot) and test-time adaptation (ModelNet40 → ScanObjectNN)
 
-![HPR examples](outputs/figures/hpr_car_armadillo_bunny_piano_spatial.png)
+![HPR examples](docs/figures/hpr_car_armadillo_bunny_piano_spatial.png)
 
 ## Results
 
@@ -31,7 +31,7 @@ PointMLP checkpoint `checkpoints/pointMLP_baseline_best.pth` (300 epochs on Mode
   - ModelNet10, using the ModelNet10 classes of the 40-class output.
 - CLIP: ViT-L/14@336px, PointCLIP-style depth-map projection with 9 views. Backbone and background were selected on 400 training objects.
 
-![PointMLP and CLIP](outputs/figures/plots/pointmlp_vs_clip.png)
+![PointMLP and CLIP](docs/figures/pointmlp_vs_clip.png)
 
 ### Random point removal
 
@@ -65,7 +65,7 @@ Applied to the test sets only (1024 points per object):
 | ModelNet10 | contiguous 40% | 86.89 | 25.77 |
 | ModelNet10 | contiguous 50% | 79.41 | 23.57 |
 
-![Random point removal](outputs/figures/plots/removal_curves.png)
+![Random point removal](docs/figures/removal_curves.png)
 
 ### Test-time adaptation, ModelNet40 → ScanObjectNN
 
@@ -84,7 +84,7 @@ Overall accuracy (%), mean of 3 seeds; in brackets the gain over source only, * 
   SAR: entropy minimisation on reliable samples with sharpness-aware updates.
 - ScanObjectNN `cabinet` is scored with the highest of the dresser, night stand and wardrobe outputs; `display` with monitor, `shelf` with bookshelf.
 
-![TTA on ScanObjectNN](outputs/figures/plots/tta_scanobjectnn.png)
+![TTA on ScanObjectNN](docs/figures/tta_scanobjectnn.png)
 
 ## Reproduce
 
@@ -147,7 +147,7 @@ python scripts/make_plots.py            # result plots
 `make_hpr_testset.py`, `test_zeroshot.py` and `test_zeroshot_clip.py` accept `--datasets modelnet40 modelnet10`.
 
 The notebook `notebooks/Workshop_PointCloud_Classification.ipynb` covers the same material. It runs small examples
-(sampling, HPR, point removal, predictions, CLIP, test-time adaptation) and loads the saved results; it is stored with its outputs.
+(sampling, HPR, point removal, predictions, CLIP, test-time adaptation) and loads the results written by `run_all.sh`; it is stored with its outputs.
 
 ## Training
 
@@ -232,7 +232,8 @@ scripts/      data and checkpoint download, data preparation, visualisation, tra
 src/          model, data utilities, evaluation, CLIP classifier, rendering
 notebooks/    workshop notebook
 reference/    pointnet2_ops CUDA extension from the PointMLP repository (Apache-2.0)
-outputs/      figures, plots, logs, results
+docs/         figures shown in this README
+outputs/      figures, plots, logs and results written by the scripts (not tracked)
 ```
 
 ## Citation

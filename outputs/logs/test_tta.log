@@ -1,6 +1,0 @@
-$ python scripts/test_tta.py
-checkpoint: checkpoints/pointMLP_baseline_best.pth
-obj_only   source_only  48.2  bn_adapt  50.8  tent  51.4  shot_im  52.0  t3a  47.5  bn_t3a  52.8  sar  50.8  (87s)
-obj_bg     source_only  42.2  bn_adapt  45.7  tent  45.9  shot_im  47.2  t3a  42.5  bn_t3a  46.7  sar  45.7  (85s)
-pb_t50_rs  source_only  35.5  bn_adapt  36.9  tent  36.7  shot_im  36.4  t3a  35.4  bn_t3a  36.6  sar  37.0  (422s)
-saved -> outputs/results/tta_summary.json

@@ -1,4 +1,0 @@
-$ python scripts/prepare_scanobjectnn.py
-scanobjectnn_obj_only.h5     (475, 2048, 3)  classes [22, 75, 78, 30, 42, 42, 49, 24, 42, 54, 17]
-scanobjectnn_obj_bg.h5       (475, 2048, 3)  classes [22, 75, 78, 30, 42, 42, 49, 24, 42, 54, 17]
-scanobjectnn_pb_t50_rs.h5    (2362, 2048, 3)  classes [110, 372, 390, 150, 204, 210, 241, 120, 210, 270, 85]

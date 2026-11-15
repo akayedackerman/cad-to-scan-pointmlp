@@ -10,12 +10,10 @@ data/processed/
 *.pt
 *.ckpt
 
-# training runs
-outputs/training/
+# generated outputs (figures, plots, logs, results, training runs)
+outputs/
 
 # slide material (screenshots, figures and tables for the presentation)
-outputs/screenshots/
-outputs/ppt/
 scripts/make_screenshots.py
 scripts/export_ppt.py
 
@@ -33,5 +31,3 @@ dist/
 .DS_Store
 Thumbs.db
 
-# figures made with visualize_select.py
-outputs/figures/custom/
