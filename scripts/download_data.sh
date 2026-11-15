@@ -13,7 +13,7 @@ get() {  # get <url> <folder>
     return
   fi
   echo "downloading $2 ..."
-  curl -fL --retry 3 -o "$2.zip" "$1"
+  curl -fL --retry 3 --progress-bar -o "$2.zip" "$1"
   unzip -q "$2.zip" -d "_$2" && rm "$2.zip"
   mv "_$2/$2" "$2" && rm -rf "_$2"
   echo "$2: $(find "$2" -name '*.off' | wc -l) meshes"
