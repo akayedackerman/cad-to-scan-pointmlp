@@ -1,0 +1,4 @@
+$ python scripts/prepare_data.py --workers 8 --force
+modelnet40_test_32768.h5         (2468, 32768, 3)  (20s)
+modelnet10_test_32768.h5         (908, 32768, 3)  (6s)
+modelnet40_train_2048.h5         (9843, 2048, 3)  (52s)

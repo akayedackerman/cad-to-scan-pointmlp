@@ -1,0 +1,5 @@
+$ python scripts/test_zeroshot.py --datasets modelnet10
+checkpoint: checkpoints/pointMLP_baseline_best.pth
+[zeroshot] modelnet10 full_1024  OA 94.93%  mAcc 94.86%  (n=908)
+[zeroshot] modelnet10 hpr_1024   OA 73.68%  mAcc 73.14%  (n=908)
+saved -> outputs/results/zeroshot_results.json

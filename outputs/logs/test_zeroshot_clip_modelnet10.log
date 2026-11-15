@@ -1,0 +1,5 @@
+$ python scripts/test_zeroshot_clip.py --datasets modelnet10
+-> using ViT-L/14@336px, background=white (selected on training objects)
+ModelNet10 full_1024  OA 37.00%  mAcc 34.23%  (n=908)
+ModelNet10 hpr_1024   OA 42.40%  mAcc 40.56%  (n=908)
+saved -> outputs/results/clip_results.json

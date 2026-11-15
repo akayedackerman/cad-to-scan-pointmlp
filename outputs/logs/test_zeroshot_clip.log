@@ -1,0 +1,12 @@
+$ python scripts/test_zeroshot_clip.py
+[selection on 400 train objects] ViT-B/32        bg=white  acc 23.75%
+[selection on 400 train objects] ViT-B/32        bg=black  acc 21.50%
+[selection on 400 train objects] ViT-L/14@336px  bg=white  acc 30.25%
+[selection on 400 train objects] ViT-L/14@336px  bg=black  acc 28.25%
+-> using ViT-L/14@336px, background=white
+ModelNet40 full_1024  OA 39.67%  mAcc 39.78%
+ModelNet40 full_2048  OA 44.29%  mAcc 44.40%
+ModelNet40 hpr_1024   OA 45.83%  mAcc 44.64%
+ModelNet40 hpr_2048   OA 47.49%  mAcc 46.47%
+ModelNet40 hpr_raw    OA 47.65%  mAcc 46.71%
+saved -> outputs/results

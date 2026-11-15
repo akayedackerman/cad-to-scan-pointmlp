@@ -1,0 +1,26 @@
+$ python scripts/visualize.py
+saved outputs/figures/hpr_modelnet40_a_spatial.png
+saved outputs/figures/hpr_modelnet40_a_gray.png
+saved outputs/figures/hpr_modelnet40_b_spatial.png
+saved outputs/figures/hpr_modelnet40_b_gray.png
+saved outputs/figures/hpr_modelnet10_a_spatial.png
+saved outputs/figures/hpr_modelnet10_a_gray.png
+saved outputs/figures/hpr_modelnet10_b_spatial.png
+saved outputs/figures/hpr_modelnet10_b_gray.png
+saved outputs/figures/hpr_car_armadillo_bunny_piano_spatial.png
+saved outputs/figures/hpr_car_armadillo_bunny_piano_gray.png
+saved outputs/figures/removal_modelnet40_spatial.png
+saved outputs/figures/removal_modelnet40_gray.png
+saved outputs/figures/removal_modelnet10_spatial.png
+saved outputs/figures/removal_modelnet10_gray.png
+saved outputs/figures/scanobjectnn_spatial.png
+saved outputs/figures/scanobjectnn_gray.png
+saved outputs/figures/gallery_modelnet40_complete_spatial.png
+saved outputs/figures/gallery_modelnet40_complete_gray.png
+saved outputs/figures/gallery_modelnet40_hpr_spatial.png
+saved outputs/figures/gallery_modelnet40_hpr_gray.png
+saved outputs/figures/gallery_modelnet10_complete_spatial.png
+saved outputs/figures/gallery_modelnet10_complete_gray.png
+saved outputs/figures/gallery_modelnet10_hpr_spatial.png
+saved outputs/figures/gallery_modelnet10_hpr_gray.png
+saved 8 interactive views -> outputs/figures/interactive

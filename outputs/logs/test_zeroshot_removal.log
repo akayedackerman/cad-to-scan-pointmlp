@@ -1,0 +1,23 @@
+$ python scripts/test_zeroshot.py --sets removal
+checkpoint: checkpoints/pointMLP_baseline_best.pth
+[zeroshot] modelnet40 removal_uniform_10 OA 92.99%  mAcc 89.84%  (n=2468)
+[zeroshot] modelnet40 removal_uniform_20 OA 92.95%  mAcc 89.45%  (n=2468)
+[zeroshot] modelnet40 removal_uniform_30 OA 92.71%  mAcc 89.09%  (n=2468)
+[zeroshot] modelnet40 removal_uniform_40 OA 92.54%  mAcc 88.88%  (n=2468)
+[zeroshot] modelnet40 removal_uniform_50 OA 92.75%  mAcc 88.72%  (n=2468)
+[zeroshot] modelnet40 removal_contiguous_10 OA 92.02%  mAcc 88.53%  (n=2468)
+[zeroshot] modelnet40 removal_contiguous_20 OA 89.22%  mAcc 84.97%  (n=2468)
+[zeroshot] modelnet40 removal_contiguous_30 OA 85.53%  mAcc 80.82%  (n=2468)
+[zeroshot] modelnet40 removal_contiguous_40 OA 82.05%  mAcc 76.82%  (n=2468)
+[zeroshot] modelnet40 removal_contiguous_50 OA 73.18%  mAcc 67.32%  (n=2468)
+[zeroshot] modelnet10 removal_uniform_10 OA 94.71%  mAcc 94.60%  (n=908)
+[zeroshot] modelnet10 removal_uniform_20 OA 94.27%  mAcc 94.15%  (n=908)
+[zeroshot] modelnet10 removal_uniform_30 OA 94.38%  mAcc 94.18%  (n=908)
+[zeroshot] modelnet10 removal_uniform_40 OA 94.27%  mAcc 94.13%  (n=908)
+[zeroshot] modelnet10 removal_uniform_50 OA 95.04%  mAcc 94.91%  (n=908)
+[zeroshot] modelnet10 removal_contiguous_10 OA 93.72%  mAcc 93.60%  (n=908)
+[zeroshot] modelnet10 removal_contiguous_20 OA 92.40%  mAcc 92.23%  (n=908)
+[zeroshot] modelnet10 removal_contiguous_30 OA 90.53%  mAcc 90.30%  (n=908)
+[zeroshot] modelnet10 removal_contiguous_40 OA 86.89%  mAcc 86.51%  (n=908)
+[zeroshot] modelnet10 removal_contiguous_50 OA 79.41%  mAcc 78.72%  (n=908)
+saved -> outputs/results/zeroshot_results.json

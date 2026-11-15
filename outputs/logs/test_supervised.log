@@ -1,0 +1,5 @@
+$ python scripts/test_supervised.py
+checkpoint: checkpoints/pointMLP_baseline_best.pth
+[supervised] modelnet40 full_1024  OA 92.99%  mAcc 89.57%  (n=2468)
+[supervised] modelnet40 full_2048  OA 93.07%  mAcc 89.92%  (n=2468)
+saved -> outputs/results/supervised_results.json
