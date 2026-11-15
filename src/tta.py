@@ -13,6 +13,7 @@ Methods (same definitions and defaults as the earlier DGCNN test-time adaptation
 
 The test label space is a list of groups of ModelNet40 classes; the logit of a group is the
 log-sum-exp of its members (e.g. ScanObjectNN "cabinet" = dresser, night_stand, wardrobe).
+Hyperparameters can be changed with Adapter(..., hparams={...}) (configs/test.yaml, tta.hparams).
 Each adapter works on its own copy of the model. One gradient step per batch; the prediction
 for a batch comes from the forward pass before its update, as in TENT.
 """
@@ -22,10 +23,8 @@ import torch
 import torch.nn as nn
 
 METHODS = ["source_only", "bn_adapt", "tent", "shot_im", "t3a", "bn_t3a", "sar"]
-TENT_LR = 1e-3
-SHOT_LR = 1e-4
-T3A_FILTER_K = 100
-SAR_LR, SAR_RHO, SAR_MARGIN, SAR_RESET = 2.5e-4, 0.05, 0.4, 0.2
+HPARAMS = dict(tent_lr=1e-3, shot_lr=1e-4, t3a_filter_k=100,
+               sar_lr=2.5e-4, sar_momentum=0.9, sar_rho=0.05, sar_margin=0.4, sar_reset=0.2)
 _BN = (nn.BatchNorm1d, nn.BatchNorm2d)
 
 
@@ -43,9 +42,13 @@ def _entropy(logits):
 
 
 class Adapter:
-    def __init__(self, model, method, groups):
+    def __init__(self, model, method, groups, hparams=None):
         if method not in METHODS:
             raise ValueError(f"unknown method {method!r}")
+        unknown = set(hparams or {}) - set(HPARAMS)
+        if unknown:
+            raise ValueError(f"unknown hyperparameters {sorted(unknown)}")
+        self.hp = {**HPARAMS, **(hparams or {})}
         self.method, self.groups = method, groups
         self.model = copy.deepcopy(model)
         self.head = self.model.classifier[-1]          # Linear(256, 40)
@@ -61,17 +64,17 @@ class Adapter:
                 p.requires_grad_(False)
             if method in ("tent", "sar"):
                 params = [p for m in self.model.modules() if isinstance(m, _BN) for p in (m.weight, m.bias)]
-                lr = TENT_LR
+                lr = self.hp["tent_lr"]
             else:
                 head = set(map(id, self.head.parameters()))
                 params = [p for p in self.model.parameters() if id(p) not in head]
-                lr = SHOT_LR
+                lr = self.hp["shot_lr"]
             for p in params:
                 p.requires_grad_(True)
             if method == "sar":
                 self.params = params
-                self.opt = torch.optim.SGD(params, lr=SAR_LR, momentum=0.9)
-                self.margin = SAR_MARGIN * torch.log(torch.tensor(float(len(groups)))).item()
+                self.opt = torch.optim.SGD(params, lr=self.hp["sar_lr"], momentum=self.hp["sar_momentum"])
+                self.margin = self.hp["sar_margin"] * torch.log(torch.tensor(float(len(groups)))).item()
                 self.ema = None
                 self.initial = copy.deepcopy(self.model.state_dict())
                 self.initial_opt = copy.deepcopy(self.opt.state_dict())
@@ -103,7 +106,7 @@ class Adapter:
         keep = []
         for c in range(self.support_labels.shape[1]):
             idx = (cls == c).nonzero(as_tuple=True)[0]
-            keep.append(idx[self.support_ent[idx].argsort()[:T3A_FILTER_K]])
+            keep.append(idx[self.support_ent[idx].argsort()[:self.hp["t3a_filter_k"]]])
         keep = torch.cat(keep)
         self.support, self.support_labels, self.support_ent = (
             self.support[keep], self.support_labels[keep], self.support_ent[keep])
@@ -122,7 +125,7 @@ class Adapter:
             eps = []
             with torch.no_grad():
                 for p in self.params:
-                    e = SAR_RHO * p.grad / norm if p.grad is not None else torch.zeros_like(p)
+                    e = self.hp["sar_rho"] * p.grad / norm if p.grad is not None else torch.zeros_like(p)
                     p.add_(e)
                     eps.append(e)
             self.opt.zero_grad()
@@ -137,7 +140,7 @@ class Adapter:
                     p.sub_(e)
             self.opt.step()
             self.opt.zero_grad()
-            if self.ema is not None and self.ema < SAR_RESET:   # model recovery
+            if self.ema is not None and self.ema < self.hp["sar_reset"]:   # model recovery
                 self.model.load_state_dict(self.initial)
                 self.opt.load_state_dict(self.initial_opt)
                 self.ema = None

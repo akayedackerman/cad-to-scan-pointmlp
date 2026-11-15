@@ -1,11 +1,11 @@
 """Train PointMLP on ModelNet40.
 
-Settings are read from configs/pointmlp_modelnet40.yaml; any key can be overridden on the
+Settings are read from configs/train.yaml; any key can be overridden on the
 command line (e.g. --epochs 50 --batch_size 16 --run_name test).
 Output in outputs/training/<run_name>/: config.yaml, log.csv, curves.png, best.pth, last.pth.
 
 Usage:
-  python scripts/train_pointmlp.py [--config configs/pointmlp_modelnet40.yaml] [--resume]
+  python scripts/train_pointmlp.py [--config configs/train.yaml] [--resume]
   bash train.sh
 """
 import argparse
@@ -99,7 +99,7 @@ def plot_curves(rows, out, title):
 
 def load_config():
     ap = argparse.ArgumentParser(description="Train PointMLP on ModelNet40")
-    ap.add_argument("--config", default=str(ROOT / "configs/pointmlp_modelnet40.yaml"))
+    ap.add_argument("--config", default=str(ROOT / "configs/train.yaml"))
     ap.add_argument("--resume", action="store_true", help="continue from outputs/training/<run_name>/last.pth")
     known, rest = ap.parse_known_args()
     cfg = yaml.safe_load(open(known.config))

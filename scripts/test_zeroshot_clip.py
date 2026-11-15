@@ -2,7 +2,8 @@
 
 Backbone (ViT-B/32 or ViT-L/14@336px) and background colour are chosen on 400 ModelNet40 training objects.
 
-Usage: python scripts/test_zeroshot_clip.py [--datasets modelnet40 modelnet10] [--sets removal]
+Settings: configs/test.yaml (clip); removal sets from configs/data.yaml (removal)
+Usage:    python scripts/test_zeroshot_clip.py [--datasets modelnet40 modelnet10] [--sets removal]
 """
 import argparse
 import csv
@@ -21,6 +22,7 @@ from tqdm import tqdm  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
+import config  # noqa: E402
 from evaluate import REMOVAL_SETS, load_set, plot_confusion, pretty  # noqa: E402
 from metrics import confusion, summarize  # noqa: E402
 from pc_utils import MODELNET10_CLASSES, MODELNET40_CLASSES  # noqa: E402
@@ -41,7 +43,7 @@ def predict(zs, X, bs=16, desc=None):
     return np.concatenate([zs.logits(torch.from_numpy(X[i:i + bs])).cpu().numpy() for i in steps])
 
 
-def train_subset(per_class=10, n_points=1024, seed=0):
+def train_subset(per_class, seed, n_points=1024):
     rng = np.random.default_rng(seed)
     with h5py.File(P / "modelnet40_train_2048.h5", "r") as h:
         X, y = h["data"][:], h["label"][:, 0]
@@ -62,19 +64,24 @@ def show_views(zs, pts, title, out):
     plt.close(fig)
 
 
-def evaluate_sets(tests):
+def make_clip(arch, c, background="white"):
+    return CLIPZeroShot(arch, classes=MODELNET40_CLASSES, n_azim=c.n_azim, elevations=tuple(c.elevations),
+                        add_top=c.add_top, background=background)
+
+
+def evaluate_sets(tests, c):
     """Evaluate (dataset, set) pairs with the backbone and background already selected; other results are kept."""
     res = json.loads((R / "clip_results.json").read_text())
     cfg = res["config"]
     print(f"-> using {cfg['clip']}, background={cfg['background']} (selected on training objects)")
-    zs = CLIPZeroShot(cfg["clip"], classes=MODELNET40_CLASSES, background=cfg["background"])
+    zs = make_clip(cfg["clip"], c, cfg["background"])
     preds = dict(np.load(R / "clip_predictions.npz"))
     for ds, s in tests:
         classes = MODELNET10_CLASSES if ds == "modelnet10" else MODELNET40_CLASSES
         if zs.classes != classes:
             zs.set_classes(classes)
         X, y = load_set(ds, s)
-        pr = predict(zs, X, desc=f"{ds} {s}").argmax(1)
+        pr = predict(zs, X, c.batch_size, desc=f"{ds} {s}").argmax(1)
         r = summarize(y, pr, len(classes))
         r.pop("per_class")
         res[f"{ds}/{s}"], preds[f"{ds}_{s}"] = r, pr
@@ -87,10 +94,11 @@ def evaluate_sets(tests):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--datasets", nargs="+", default=["modelnet40", "modelnet10"])
-    ap.add_argument("--sets", nargs="+", default=None, choices=["complete", "removal"],
+    ap.add_argument("--datasets", nargs="+")
+    ap.add_argument("--sets", nargs="+", choices=["complete", "removal"],
                     help="evaluate only these sets with the selected backbone; other results are kept")
-    a = ap.parse_args()
+    ap.add_argument("--batch_size", type=int)
+    a = config.load(ap, "configs/test.yaml", "clip")
     torch.manual_seed(0)
     if a.sets or a.datasets == ["modelnet10"]:
         tests = []
@@ -98,18 +106,18 @@ if __name__ == "__main__":
             tests += [("modelnet10", "full_1024"), ("modelnet10", "hpr_1024")] if "modelnet10" in a.datasets else []
         if a.sets and "removal" in a.sets:
             tests += [(ds, s) for ds in a.datasets for s in REMOVAL_SETS]
-        evaluate_sets(tests)
+        evaluate_sets(tests, a)
         sys.exit(0)
     # choose backbone and background on training objects
-    Xv, yv = train_subset()
+    Xv, yv = train_subset(a.selection_per_class, a.selection_seed)
     best, search = None, {}
-    for arch in ["ViT-B/32", "ViT-L/14@336px"]:
-        zs = CLIPZeroShot(arch, classes=MODELNET40_CLASSES)
-        for bg in ["white", "black"]:
+    for arch in a.backbones:
+        zs = make_clip(arch, a)
+        for bg in a.backgrounds:
             zs.background = bg
-            acc = float((predict(zs, Xv).argmax(1) == yv).mean())
+            acc = float((predict(zs, Xv, a.batch_size).argmax(1) == yv).mean())
             search[f"{arch} | {bg}"] = acc
-            print(f"[selection on 400 train objects] {arch:15s} bg={bg:5s}  acc {acc:.2%}")
+            print(f"[selection on {len(yv)} train objects] {arch:15s} bg={bg:5s}  acc {acc:.2%}")
             if best is None or acc > best[0]:
                 best = (acc, arch, bg)
         del zs
@@ -118,12 +126,12 @@ if __name__ == "__main__":
     print(f"-> using {arch}, background={bg}")
 
     # test sets
-    zs = CLIPZeroShot(arch, classes=MODELNET40_CLASSES, background=bg)
+    zs = make_clip(arch, a, bg)
     res = {"config": {"clip": arch, "background": bg, "views": int(zs.mats.shape[0]), "selection_on_train": search}}
     per_class, preds = {}, {}
     for s in ["full_1024", "full_2048", "hpr_1024", "hpr_2048", "hpr_raw"]:
         X, y = load_set("modelnet40", s)
-        pr = predict(zs, X).argmax(1)
+        pr = predict(zs, X, a.batch_size).argmax(1)
         r = summarize(y, pr, 40)
         per_class[s] = r.pop("per_class")
         res[f"modelnet40/{s}"], preds[f"modelnet40_{s}"] = r, pr
@@ -137,7 +145,7 @@ if __name__ == "__main__":
     zs.set_classes(MODELNET10_CLASSES)
     for s in ["full_1024", "hpr_1024"]:
         X, y = load_set("modelnet10", s)
-        pr = predict(zs, X).argmax(1)
+        pr = predict(zs, X, a.batch_size).argmax(1)
         r = summarize(y, pr, 10)
         r.pop("per_class")
         res[f"modelnet10/{s}"], preds[f"modelnet10_{s}"] = r, pr

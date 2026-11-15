@@ -1,0 +1,41 @@
+# Point-cloud data preparation.
+# Each script reads its own section; values at the top level are shared by all sections.
+# Any value can be overridden on the command line, e.g.
+#   python scripts/make_hpr_testset.py --gamma 2 --datasets modelnet40
+# Input: data/raw/   Output: data/processed/   Logs: outputs/logs/<script>.log
+
+dense_points: 32768             # points sampled on each test mesh (input of HPR and the figures)
+
+# scripts/prepare_data.py: surface sampling of the ModelNet meshes, normalised to the unit sphere
+modelnet:
+  train_points: 2048            # ModelNet40 training set (PointMLP picks 1024 of them per epoch)
+  workers: 16
+  force: false                  # true: rebuild files that already exist
+
+# scripts/make_hpr_testset.py: single-view test sets with Hidden Point Removal (Katz et al. 2007)
+hpr:
+  datasets: [modelnet40, modelnet10]
+  gamma: 3.0                    # HPR radius R = max|p - camera| * 10**gamma
+  camera_distance: 4.0          # objects lie in the unit sphere
+  azimuths: [45, 135, 225, 315] # three-quarter views (degrees)
+  azimuth_jitter: 15.0          # +- uniform jitter around each azimuth
+  elevation: [15.0, 30.0]       # uniform range above the horizontal plane (+Z up)
+  sizes: [1024, 2048]           # fixed-size sets (FPS); all visible points are kept as well
+  seed: 0                       # camera of object i drawn with the seed [seed, i]
+  workers: 8
+
+# scripts/make_removal_sets.py: random point removal (test sets only)
+removal:
+  datasets: [modelnet40, modelnet10]
+  source: full_1024             # complete test objects the points are removed from
+  methods: [uniform, contiguous]  # uniform: random points; contiguous: one ball-shaped hole (kNN of a random point)
+  ratios: [10, 20, 30, 40, 50]  # percent of the points removed
+  seed: 0
+
+# scripts/prepare_scanobjectnn.py: real scans, 11 classes shared with ModelNet40, rotated Y-up -> Z-up
+scanobjectnn:
+  raw_dir: data/raw/ScanObjectNN/h5_files
+  variants:
+    obj_only: main_split_nobg/test_objectdataset.h5
+    obj_bg: main_split/test_objectdataset.h5
+    pb_t50_rs: main_split/test_objectdataset_augmentedrot_scale75.h5

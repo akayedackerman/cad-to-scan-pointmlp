@@ -144,14 +144,44 @@ python scripts/test_tta.py              # test-time adaptation on ScanObjectNN
 python scripts/make_plots.py            # result plots
 ```
 
-`make_hpr_testset.py`, `test_zeroshot.py` and `test_zeroshot_clip.py` accept `--datasets modelnet40 modelnet10`.
+## Configuration and logs
+
+Each stage has its own configuration file. The bash scripts only call the Python scripts in order, and every setting is in YAML:
+
+| File | Used by | Contents |
+|---|---|---|
+| `configs/data.yaml` | `prepare_data.py`, `make_hpr_testset.py`, `make_removal_sets.py`, `prepare_scanobjectnn.py` | point counts, HPR camera and radius, removal methods and ratios, seeds |
+| `configs/train.yaml` | `train_pointmlp.py`, `train.sh` | model, optimiser, schedule, augmentation |
+| `configs/test.yaml` | `test_supervised.py`, `test_zeroshot.py`, `test_zeroshot_clip.py`, `test_tta.py` | checkpoint, test sets, CLIP views, TTA methods and hyperparameters |
+
+`data.yaml` and `test.yaml` have one section per script. Every value can be overridden on the command line, and
+`--config` selects another file (`python scripts/<script>.py --help` lists the options):
+
+```bash
+python scripts/make_hpr_testset.py --gamma 2 --datasets modelnet40
+python scripts/make_removal_sets.py --methods contiguous --ratios 20 40
+python scripts/test_supervised.py --checkpoint checkpoints/other.pth
+python scripts/test_tta.py --seeds 0 --methods tent sar
+DATA_CONFIG=my_data.yaml TEST_CONFIG=my_test.yaml bash run_all.sh
+```
+
+At start, each script prints the configuration it uses. All its output is then written with timestamps to the console and to
+`outputs/logs/<script>.log`; each run is appended as a new block:
+
+```
+2026-11-15 16:21:02 | INFO  | prepare_data  (config: configs/data.yaml, section: modelnet)
+2026-11-15 16:21:02 | INFO  |   {dense_points: 32768, train_points: 2048, workers: 16, force: false}
+2026-11-15 16:22:14 | INFO  | modelnet40: 2468 objects | visible 11781 / 32768 points on average (36.0%; ...)
+```
+
+Training logs go to `outputs/training/<run_name>/` (see [Training](#training)).
 
 The notebook `notebooks/Workshop_PointCloud_Classification.ipynb` covers the same material. It runs small examples
 (sampling, HPR, point removal, predictions, CLIP, test-time adaptation) and loads the results written by `run_all.sh`; it is stored with its outputs.
 
 ## Training
 
-Configuration: `configs/pointmlp_modelnet40.yaml`.
+Configuration: `configs/train.yaml`.
 
 | Setting | Value |
 |---|---|
@@ -169,9 +199,9 @@ bash train.sh                                    # start in the background
 tail -f outputs/training/pointmlp_modelnet40_300ep/train.log
 kill $(cat outputs/training/pointmlp_modelnet40_300ep/train.pid)
 RESUME=1 bash train.sh                           # resume
-bash train.sh configs/pointmlp_modelnet40.yaml --epochs 100 --batch_size 16 --run_name run2
+bash train.sh configs/train.yaml --epochs 100 --batch_size 16 --run_name run2
 GPU=1 bash train.sh
-python scripts/train_pointmlp.py --config configs/pointmlp_modelnet40.yaml   # foreground
+python scripts/train_pointmlp.py --config configs/train.yaml   # foreground
 ```
 
 Each run writes these files to `outputs/training/<run_name>/`:
@@ -183,11 +213,11 @@ Each run writes these files to `outputs/training/<run_name>/`:
 - `last.pth`
 - `train.log`
 
-To test another checkpoint, change `CKPT` in `src/evaluate.py`.
+To test another checkpoint, set `checkpoint` in `configs/test.yaml` or pass `--checkpoint` to the test scripts.
 
 ## Data
 
-Point clouds are sampled uniformly on the mesh surfaces and normalised to the unit sphere. ModelNet meshes are Z-up and are used without rotation.
+Settings: `configs/data.yaml`. Point clouds are sampled uniformly on the mesh surfaces and normalised to the unit sphere. ModelNet meshes are Z-up and are used without rotation.
 
 HPR (Katz et al., 2007):
 
@@ -225,11 +255,11 @@ Figures (`scripts/visualize.py`, colour and greyscale):
 ## Layout
 
 ```
-configs/      training configuration
+configs/      data.yaml, train.yaml, test.yaml (data preparation, training, testing)
 environment.yml, requirements.txt   dependencies
 CITATIONS.bib                        BibTeX of the methods and datasets used
 scripts/      data and checkpoint download, data preparation, visualisation, training, testing, plots
-src/          model, data utilities, evaluation, CLIP classifier, rendering
+src/          model, data utilities, evaluation, CLIP classifier, test-time adaptation, rendering, configuration
 notebooks/    workshop notebook
 reference/    pointnet2_ops CUDA extension from the PointMLP repository (Apache-2.0)
 docs/         figures shown in this README

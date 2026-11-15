@@ -25,6 +25,7 @@ import yaml  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
+import config  # noqa: E402
 from evaluate import CKPT  # noqa: E402
 from pc_utils import MODELNET40_CLASSES  # noqa: E402
 from pointmlp import load_pointmlp  # noqa: E402
@@ -94,7 +95,7 @@ def training_curves(run):
 
 
 def lr_schedule():
-    cfg = yaml.safe_load(open(ROOT / "configs/pointmlp_modelnet40.yaml"))
+    cfg = yaml.safe_load(open(ROOT / "configs/train.yaml"))
     n, lr, lo = cfg["epochs"], cfg["learning_rate"], cfg["min_lr"]
     e = np.arange(n)
     lrs = lo + (lr - lo) * (1 + np.cos(np.pi * e / n)) / 2
@@ -347,6 +348,7 @@ if __name__ == "__main__":
     ap = argparse.ArgumentParser()
     ap.add_argument("--run", default="pointmlp_modelnet40_300ep", help="training run folder in outputs/training")
     a = ap.parse_args()
+    config.start_log("make_plots")
     sup = json.loads((R / "supervised_results.json").read_text())
     zs = json.loads((R / "zeroshot_results.json").read_text())
     res = {**sup, **zs}

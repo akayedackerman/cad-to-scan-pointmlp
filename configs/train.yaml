@@ -1,6 +1,6 @@
 # PointMLP training on ModelNet40 (settings of the official PointMLP code)
 #
-# python scripts/train_pointmlp.py --config configs/pointmlp_modelnet40.yaml [--epochs 50 ...]
+# python scripts/train_pointmlp.py --config configs/train.yaml [--epochs 50 ...]
 
 run_name: pointmlp_modelnet40_300ep    # outputs/training/<run_name>/
 

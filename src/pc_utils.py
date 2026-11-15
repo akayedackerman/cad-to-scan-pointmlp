@@ -114,13 +114,13 @@ def camera_position(azimuth_deg, elevation_deg, distance=4.0, up_axis=UP_AXIS):
     return cam
 
 
-def three_quarter_camera(rng, distance=4.0, elev_deg=(15.0, 30.0), jitter_deg=15.0):
+def three_quarter_camera(rng, distance=4.0, elev_deg=(15.0, 30.0), jitter_deg=15.0, azimuths=(45.0, 135.0, 225.0, 315.0)):
     """Elevated three-quarter view: azimuth in {45,135,225,315} +/- jitter, elevation 15-30 deg.
 
     The camera sees the front or back, one side and the top of the object.
     Returns (camera_xyz, azimuth_deg, elevation_deg).
     """
-    az = float(rng.choice([45.0, 135.0, 225.0, 315.0]) + rng.uniform(-jitter_deg, jitter_deg))
+    az = float(rng.choice([float(a) for a in azimuths]) + rng.uniform(-jitter_deg, jitter_deg))
     el = float(rng.uniform(*elev_deg))
     return camera_position(az, el, distance), az, el
 

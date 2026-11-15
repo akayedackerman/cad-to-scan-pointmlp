@@ -1,0 +1,54 @@
+# Model testing with the trained PointMLP checkpoint (300 epochs on ModelNet40).
+# Each script reads its own section; values at the top level are shared by all sections.
+# Any value can be overridden on the command line, e.g.
+#   python scripts/test_tta.py --seeds 0 --methods source_only tent
+# Results: outputs/results/   Figures: outputs/figures/   Logs: outputs/logs/<script>.log
+# The random point removal sets evaluated here are the ones listed in configs/data.yaml (removal).
+
+checkpoint: checkpoints/pointMLP_baseline_best.pth
+
+# scripts/test_supervised.py: complete ModelNet40 test objects (the training distribution)
+supervised:
+  tests:
+    modelnet40: [full_1024, full_2048]
+  batch_size: 32
+
+# scripts/test_zeroshot.py: the same checkpoint on conditions it was not trained on
+zeroshot:
+  datasets: [modelnet40, modelnet10]
+  sets: [hpr, removal]          # hpr: single-view sets below; removal: random point removal sets
+  hpr_tests:
+    modelnet40: [hpr_1024, hpr_2048, hpr_raw]
+    modelnet10: [full_1024, hpr_1024]   # ModelNet10 classes of the 40-class output
+  batch_size: 32
+
+# scripts/test_zeroshot_clip.py: CLIP on depth images (PointCLIP-style), no 3D training
+clip:
+  datasets: [modelnet40, modelnet10]
+  sets: null                    # null: full run with backbone selection; [complete] / [removal]: selected backbone only
+  backbones: [ViT-B/32, ViT-L/14@336px]
+  backgrounds: [white, black]
+  selection_per_class: 10       # ModelNet40 training objects per class used to choose backbone and background
+  selection_seed: 0
+  n_azim: 8                     # views around the object
+  elevations: [20.0]
+  add_top: true                 # one extra view from above
+  batch_size: 16
+
+# scripts/test_tta.py: test-time adaptation, ModelNet40 -> ScanObjectNN
+tta:
+  variants: [obj_only, obj_bg, pb_t50_rs]
+  methods: [source_only, bn_adapt, tent, shot_im, t3a, bn_t3a, sar]
+  seeds: [0, 1, 2]              # stream order and the 2048 -> 1024 subsample
+  num_points: 1024
+  batch_size: 64
+  bootstrap: 1000               # resamples for the 95% interval of the gain over source_only
+  hparams:
+    tent_lr: 1.0e-3             # Adam, BatchNorm affine parameters
+    shot_lr: 1.0e-4             # Adam, all parameters except the last layer
+    t3a_filter_k: 100           # supports kept per class
+    sar_lr: 2.5e-4              # SGD, BatchNorm affine parameters
+    sar_momentum: 0.9
+    sar_rho: 0.05               # sharpness-aware radius
+    sar_margin: 0.4             # entropy margin = 0.4 ln C
+    sar_reset: 0.2              # model reset when the loss average falls below this

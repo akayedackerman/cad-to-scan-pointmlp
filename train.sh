@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Train PointMLP on ModelNet40 in the background.
 #
-#   bash train.sh                                   # configs/pointmlp_modelnet40.yaml
+#   bash train.sh                                   # configs/train.yaml
 #   bash train.sh configs/<config>.yaml
-#   bash train.sh configs/pointmlp_modelnet40.yaml --epochs 50 --run_name short
+#   bash train.sh configs/train.yaml --epochs 50 --run_name short
 #   RESUME=1 bash train.sh                          # resume from last.pth
 #   GPU=1 bash train.sh
 #
@@ -12,7 +12,7 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
-CONFIG=${1:-configs/pointmlp_modelnet40.yaml}
+CONFIG=${1:-configs/train.yaml}
 shift || true
 PY=${PY:-python}
 export CUDA_VISIBLE_DEVICES=${GPU:-0}

@@ -6,8 +6,10 @@ Output: data/processed/scanobjectnn_{obj_only,obj_bg,pb_t50_rs}.h5   data [N,204
 Points are rotated from Y-up (ScanObjectNN) to Z-up (ModelNet): (x, y, z) -> (x, -z, y).
 Normalisation and the 2048 -> 1024 subsampling are done at test time.
 
-Usage: python scripts/prepare_scanobjectnn.py
+Settings: configs/data.yaml (scanobjectnn)
+Usage:    python scripts/prepare_scanobjectnn.py
 """
+import argparse
 import sys
 from pathlib import Path
 
@@ -16,17 +18,16 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
+import config  # noqa: E402
 from pc_utils import SCANOBJECTNN_CLASSES, SCANOBJECTNN_SHARED  # noqa: E402
 
-RAW = ROOT / "data/raw/ScanObjectNN/h5_files"
-VARIANTS = {"obj_only": "main_split_nobg/test_objectdataset.h5",
-            "obj_bg": "main_split/test_objectdataset.h5",
-            "pb_t50_rs": "main_split/test_objectdataset_augmentedrot_scale75.h5"}
-
 if __name__ == "__main__":
+    ap = argparse.ArgumentParser()
+    ap.add_argument("--raw_dir")
+    c = config.load(ap, "configs/data.yaml", "scanobjectnn")
     shared = list(SCANOBJECTNN_SHARED)
-    for name, rel in VARIANTS.items():
-        with h5py.File(RAW / rel, "r") as h:
+    for name, rel in c.variants.items():
+        with h5py.File(ROOT / c.raw_dir / rel, "r") as h:
             X, y = h["data"][:].astype(np.float32), h["label"][:].astype(int).ravel()
         keep = np.isin(y, [SCANOBJECTNN_CLASSES.index(c) for c in shared])
         X = X[keep]

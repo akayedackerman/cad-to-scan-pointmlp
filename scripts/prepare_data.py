@@ -4,9 +4,10 @@ Points are sampled uniformly on the mesh surface and normalised to the unit sphe
   modelnet40_train_2048.h5   9,843 x 2048
   modelnet40_test_32768.h5   2,468 x 32768
   modelnet10_test_32768.h5     908 x 32768
-Files that already exist are skipped unless --force is given.
+Files that already exist are skipped unless force is set.
 
-Usage: python scripts/prepare_data.py [--workers 16] [--force]
+Settings: configs/data.yaml (dense_points, modelnet)
+Usage:    python scripts/prepare_data.py [--workers 16] [--force]
 """
 import argparse
 import sys
@@ -20,6 +21,7 @@ import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
+import config  # noqa: E402
 from pc_utils import MODELNET10_CLASSES, MODELNET40_CLASSES, normalize_unit_sphere, read_off, sample_surface  # noqa: E402
 
 
@@ -50,10 +52,12 @@ def build(root, classes, split, n, out, workers, force=False):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--workers", type=int, default=16)
-    ap.add_argument("--force", action="store_true", help="rebuild files that already exist (overwrites them)")
-    a = ap.parse_args()
-    raw, proc = ROOT / "data/raw", ROOT / "data/processed"
-    build(raw / "ModelNet40", MODELNET40_CLASSES, "test", 32768, proc / "modelnet40_test_32768.h5", a.workers, a.force)
-    build(raw / "ModelNet10", MODELNET10_CLASSES, "test", 32768, proc / "modelnet10_test_32768.h5", a.workers, a.force)
-    build(raw / "ModelNet40", MODELNET40_CLASSES, "train", 2048, proc / "modelnet40_train_2048.h5", a.workers, a.force)
+    ap.add_argument("--dense_points", type=int)
+    ap.add_argument("--train_points", type=int)
+    ap.add_argument("--workers", type=int)
+    ap.add_argument("--force", action="store_true", default=None, help="rebuild files that already exist (overwrites them)")
+    c = config.load(ap, "configs/data.yaml", "modelnet")
+    raw, proc, d, t = ROOT / "data/raw", ROOT / "data/processed", c.dense_points, c.train_points
+    build(raw / "ModelNet40", MODELNET40_CLASSES, "test", d, proc / f"modelnet40_test_{d}.h5", c.workers, c.force)
+    build(raw / "ModelNet10", MODELNET10_CLASSES, "test", d, proc / f"modelnet10_test_{d}.h5", c.workers, c.force)
+    build(raw / "ModelNet40", MODELNET40_CLASSES, "train", t, proc / f"modelnet40_train_{t}.h5", c.workers, c.force)

@@ -9,7 +9,8 @@ Output (data/processed/<dataset>_test_*.h5):
   full_1024/2048     complete objects, FPS, normalised to the unit sphere
 Fixed-size files also store camera, azimuth, elevation, n_visible, center and scale.
 
-Usage: python scripts/make_hpr_testset.py [--gamma 3] [--seed 0] [--datasets modelnet40 modelnet10]
+Settings: configs/data.yaml (dense_points, hpr)
+Usage:    python scripts/make_hpr_testset.py [--gamma 3] [--seed 0] [--datasets modelnet40 modelnet10]
 """
 import argparse
 import sys
@@ -22,16 +23,16 @@ import torch
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
+import config  # noqa: E402
 from pc_utils import hidden_point_removal, three_quarter_camera  # noqa: E402
 from pointmlp import furthest_point_sample  # noqa: E402
 
-SIZES = (1024, 2048)
-
 
 def _hpr_job(args):
-    i, pts, seed, gamma = args
-    cam, az, el = three_quarter_camera(np.random.default_rng([seed, i]))
-    return hidden_point_removal(pts, cam, gamma=gamma), cam, az, el
+    i, pts, c = args
+    cam, az, el = three_quarter_camera(np.random.default_rng([c.seed, i]), c.camera_distance, c.elevation,
+                                       c.azimuth_jitter, c.azimuths)
+    return hidden_point_removal(pts, cam, gamma=c.gamma), cam, az, el
 
 
 def batched_fps(clouds, k, device="cuda", bs=64):
@@ -54,19 +55,19 @@ def unit_sphere(batch):
     return ((batch - center) / scale[:, None, None]).astype(np.float32), center[:, 0].astype(np.float32), scale.astype(np.float32)
 
 
-def build(ds, seed, gamma, workers):
+def build(ds, c):
     P = ROOT / "data/processed"
-    with h5py.File(P / f"{ds}_test_32768.h5", "r") as h:
+    with h5py.File(P / f"{ds}_test_{c.dense_points}.h5", "r") as h:
         dense, label, name, classes = h["data"][:], h["label"][:], h["name"][:], h.attrs["classes"]
-    with Pool(workers) as pool:
-        res = pool.map(_hpr_job, [(i, dense[i], seed, gamma) for i in range(len(dense))], chunksize=8)
+    with Pool(c.workers) as pool:
+        res = pool.map(_hpr_job, [(i, dense[i], c) for i in range(len(dense))], chunksize=8)
     vis = [dense[i][r[0]] for i, r in enumerate(res)]
     cam = np.stack([r[1] for r in res]).astype(np.float32)
     az = np.array([r[2] for r in res], np.float32)
     el = np.array([r[3] for r in res], np.float32)
     nvis = np.array([len(v) for v in vis])
     meta = dict(label=label, name=name, camera=cam, azimuth=az, elevation=el, n_visible=nvis)
-    attrs = dict(classes=classes, hpr_gamma=gamma, camera_distance=4.0, seed=seed,
+    attrs = dict(classes=classes, hpr_gamma=c.gamma, camera_distance=c.camera_distance, seed=c.seed,
                  dense_points=dense.shape[1], downsampling="fps(start=0) then unit-sphere normalisation")
 
     def write(fname, **arrays):
@@ -77,7 +78,7 @@ def build(ds, seed, gamma, workers):
 
     offsets = np.concatenate([[0], np.cumsum(nvis)])
     write(f"{ds}_test_hpr_raw.h5", points=np.concatenate(vis).astype(np.float32), offsets=offsets)
-    for k in SIZES:
+    for k in c.sizes:
         for kind, clouds in [("hpr", vis), ("full", list(dense))]:
             data, center, scale = unit_sphere(batched_fps(clouds, k))
             write(f"{ds}_test_{kind}_{k}.h5", data=data, center=center, scale=scale)
@@ -89,10 +90,15 @@ def build(ds, seed, gamma, workers):
 
 if __name__ == "__main__":
     ap = argparse.ArgumentParser()
-    ap.add_argument("--gamma", type=float, default=3.0, help="HPR radius exponent (same default as modelnet_hpr_downsample.py)")
-    ap.add_argument("--seed", type=int, default=0)
-    ap.add_argument("--workers", type=int, default=8)
-    ap.add_argument("--datasets", nargs="+", default=["modelnet40", "modelnet10"])
-    a = ap.parse_args()
-    for ds in a.datasets:
-        build(ds, a.seed, a.gamma, a.workers)
+    ap.add_argument("--datasets", nargs="+")
+    ap.add_argument("--gamma", type=float, help="HPR radius exponent")
+    ap.add_argument("--camera_distance", type=float)
+    ap.add_argument("--azimuths", nargs="+", type=float)
+    ap.add_argument("--azimuth_jitter", type=float)
+    ap.add_argument("--elevation", nargs=2, type=float, metavar=("MIN", "MAX"))
+    ap.add_argument("--sizes", nargs="+", type=int)
+    ap.add_argument("--seed", type=int)
+    ap.add_argument("--workers", type=int)
+    c = config.load(ap, "configs/data.yaml", "hpr")
+    for ds in c.datasets:
+        build(ds, c)

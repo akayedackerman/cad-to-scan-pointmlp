@@ -22,6 +22,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT / "src"))
 from pc_utils import MODELNET10_CLASSES, MODELNET40_CLASSES  # noqa: E402
 from viz import spatial_colors  # noqa: E402
+import config  # noqa: E402
 import hpr_figure  # noqa: E402
 
 P = ROOT / "data/processed"
@@ -169,6 +170,7 @@ def interactive(d, names, outdir):
 
 
 if __name__ == "__main__":
+    config.start_log("visualize")
     hpr_figures()
     removal_figures()
     scanobjectnn_figure()

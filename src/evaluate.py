@@ -11,19 +11,20 @@ import matplotlib.pyplot as plt  # noqa: E402
 import numpy as np  # noqa: E402
 import torch  # noqa: E402
 
+import config  # noqa: E402
 from metrics import confusion, summarize  # noqa: E402
 from pc_utils import MODELNET10_CLASSES, MODELNET40_CLASSES  # noqa: E402
 
 ROOT = Path(__file__).resolve().parents[1]
 P = ROOT / "data/processed"
-CKPT = ROOT / "checkpoints/pointMLP_baseline_best.pth"
+CKPT = ROOT / config.read("test")["checkpoint"]          # default checkpoint (configs/test.yaml)
+_REMOVAL = config.read("data")["removal"]                  # removal sets (configs/data.yaml)
+REMOVAL_SETS = [f"removal_{m}_{r}" for m in _REMOVAL["methods"] for r in _REMOVAL["ratios"]]
 MN10_IN_MN40 = [MODELNET40_CLASSES.index(c) for c in MODELNET10_CLASSES]
 PRETTY_SET = {"full_1024": "complete objects, 1024 points", "full_2048": "complete objects, 2048 points",
               "hpr_1024": "single-view HPR, 1024 points", "hpr_2048": "single-view HPR, 2048 points",
               "hpr_raw": "single-view HPR, all visible points"}
-PRETTY_SET.update({f"removal_{m}_{r}": f"{m} removal {r}%" for m in ["uniform", "contiguous"]
-                   for r in [10, 20, 30, 40, 50]})
-REMOVAL_SETS = [f"removal_{m}_{r}" for m in ["uniform", "contiguous"] for r in [10, 20, 30, 40, 50]]
+PRETTY_SET.update({s: f"{s.split('_')[1]} removal {s.split('_')[2]}%" for s in REMOVAL_SETS})
 PRETTY_DS = {"modelnet40": "ModelNet40", "modelnet10": "ModelNet10"}
 
 
@@ -60,12 +61,12 @@ def predict(model, X, bs=32):
     return torch.cat(out).numpy()
 
 
-def run(model, tests, tag):
+def run(model, tests, tag, bs=32):
     """Evaluate `tests` = [(dataset, set), ...]. Returns (results, per_class, predictions)."""
     res, per_class, preds = {}, {}, {}
     for ds, s in tests:
         X, y = load_set(ds, s)
-        logits = predict(model, X)
+        logits = predict(model, X, bs)
         if ds == "modelnet10":  # use only the outputs of the ten ModelNet10 classes
             logits = logits[:, MN10_IN_MN40]
         n = 10 if ds == "modelnet10" else 40
@@ -82,13 +83,13 @@ def run(model, tests, tag):
     return res, per_class, preds
 
 
-def save(res, per_class, preds, tag):
+def save(res, per_class, preds, tag, ckpt=CKPT):
     """Save results. Test sets that were not evaluated in this run keep their previous entries."""
     R = ROOT / "outputs/results"
     R.mkdir(parents=True, exist_ok=True)
     jf, nf = R / f"{tag}_results.json", R / f"{tag}_predictions.npz"
     merged = json.loads(jf.read_text()) if jf.exists() else {}
-    merged.update({"checkpoint": str(CKPT.relative_to(ROOT)), **res})
+    merged.update({"checkpoint": str(Path(ckpt).resolve().relative_to(ROOT)), **res})
     jf.write_text(json.dumps(merged, indent=2))
     old_preds = dict(np.load(nf)) if nf.exists() else {}
     np.savez(nf, **{**old_preds, **preds})
