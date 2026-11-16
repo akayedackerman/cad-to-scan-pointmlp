@@ -141,8 +141,11 @@ python scripts/test_supervised.py       # supervised evaluation
 python scripts/test_zeroshot.py         # zero-shot evaluation (HPR, ModelNet10, random point removal)
 python scripts/test_zeroshot_clip.py    # CLIP
 python scripts/test_tta.py              # test-time adaptation on ScanObjectNN
-python scripts/make_plots.py            # result plots
+python scripts/make_plots.py            # result plots, PNG (300 dpi) and PDF in outputs/figures/plots/
 ```
+
+The result plots follow the publication style of [figures4papers](https://github.com/ChenLiu-1996/figures4papers)
+(sans-serif fonts, a fixed blue/green/red palette, black bar edges and hatching that stay readable in greyscale).
 
 ## Configuration and logs
 

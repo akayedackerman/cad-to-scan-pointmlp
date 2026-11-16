@@ -1,4 +1,7 @@
-"""Result plots (outputs/figures/plots/).
+"""Result plots (outputs/figures/plots/, PNG at 300 dpi and PDF).
+
+Style after figures4papers (https://github.com/ChenLiu-1996/figures4papers): minimal spines,
+sans-serif fonts, semantic blue/green/red palette, black bar edges and hatching for greyscale print.
 
   accuracy_overview, pointmlp_vs_clip, per_class_complete_vs_hpr, robustness,
   tsne_features, predictions_supervised, predictions_zeroshot, lr_schedule,
@@ -31,19 +34,35 @@ from pc_utils import MODELNET40_CLASSES  # noqa: E402
 from pointmlp import load_pointmlp  # noqa: E402
 from viz import Camera, draw_points  # noqa: E402
 
-# colours
-BLUE, ORANGE, AQUA, YELLOW, MAGENTA, GREEN, VIOLET, RED = (
-    "#2a78d6", "#eb6834", "#1baf7a", "#eda100", "#e87ba4", "#008300", "#6250d6", "#e34948")
-INK, INK2, MUTED, GRID = "#0b0b0b", "#52514e", "#8a8984", "#e6e5e1"
-SUP, ZS = BLUE, ORANGE
-PMLP, CLIPC = BLUE, AQUA
+# Style: figures4papers house style (minimal spines, sans-serif, semantic palette, 300 dpi, PNG + PDF)
+PALETTE = {
+    "blue_main": "#0F4D92", "blue_secondary": "#3775BA",
+    "green_1": "#DDF3DE", "green_2": "#AADCA9", "green_3": "#8BCF8B",
+    "red_1": "#F6CFCB", "red_2": "#E9A6A1", "red_strong": "#B64342",
+    "neutral": "#CFCECE", "highlight": "#FFD700", "teal": "#42949E", "violet": "#9A4D8E",
+}
+INK, INK2, GRAY = "#272727", "#4D4D4D", "#767676"
+SUP, ZS = PALETTE["blue_main"], PALETTE["blue_secondary"]     # same model, two test conditions
+PMLP, CLIPC = PALETTE["blue_main"], PALETTE["red_strong"]      # PointMLP vs the CLIP comparison
+EDGE = dict(edgecolor="black", linewidth=1.5)                   # print-safe bar edges
+ZS_HATCH = "//"                                                  # zero-shot bars stay distinct in greyscale
+
+
+def _font_stack():
+    from matplotlib import font_manager
+    have = {f.name for f in font_manager.fontManager.ttflist}
+    stack = [f for f in ["Arial", "Helvetica", "Liberation Sans", "Nimbus Sans", "DejaVu Sans"] if f in have]
+    return stack + ["sans-serif"]
+
 
 plt.rcParams.update({
-    "font.size": 11, "axes.edgecolor": MUTED, "axes.labelcolor": INK2, "xtick.color": INK2,
-    "ytick.color": INK2, "axes.spines.top": False, "axes.spines.right": False, "axes.grid": True,
-    "grid.color": GRID, "grid.linewidth": 0.8, "axes.axisbelow": True, "axes.titleweight": "bold",
-    "axes.titlesize": 12, "axes.titlecolor": INK, "legend.frameon": False, "lines.linewidth": 2,
-    "figure.facecolor": "white", "axes.facecolor": "white",
+    "font.family": _font_stack(), "font.size": 16,
+    "axes.spines.top": False, "axes.spines.right": False, "axes.linewidth": 2,
+    "axes.edgecolor": INK, "axes.labelcolor": INK, "xtick.color": INK, "ytick.color": INK,
+    "xtick.major.width": 2, "ytick.major.width": 2, "axes.titleweight": "bold", "axes.titlesize": 17,
+    "axes.titlecolor": INK, "axes.grid": False, "legend.frameon": False, "lines.linewidth": 2.5,
+    "hatch.linewidth": 1.2, "svg.fonttype": "none", "pdf.fonttype": 42,
+    "figure.facecolor": "white", "axes.facecolor": "white", "savefig.facecolor": "white",
 })
 
 P = ROOT / "data/processed"
@@ -60,16 +79,24 @@ SETS = [  # (key, label, setting)
 ]
 
 
-def save(fig, name):
+def save(fig, name, pad=2):
+    """PNG (300 dpi, slides) and PDF (vector, papers) with the same base name."""
     OUT.mkdir(parents=True, exist_ok=True)
-    fig.savefig(OUT / name, dpi=170, bbox_inches="tight")
+    if fig.get_layout_engine() is None:
+        if fig._suptitle is not None:            # keeps the overall title close to the panels
+            fig.set_layout_engine("constrained", h_pad=0.1, w_pad=0.1)
+        else:
+            fig.tight_layout(pad=pad)
+    for ext in ("png", "pdf"):
+        fig.savefig(OUT / f"{Path(name).stem}.{ext}", dpi=300, bbox_inches="tight", pad_inches=0.08)
     plt.close(fig)
     print("saved", OUT / name)
 
 
-def bar_labels(ax, bars, vals):
+def bar_labels(ax, bars, vals, fontsize=13, dy=0.8):
     for b_, v in zip(bars, vals):
-        ax.text(b_.get_x() + b_.get_width() / 2, v + 1, f"{v:.1f}", ha="center", fontsize=9, color=INK)
+        ax.text(b_.get_x() + b_.get_width() / 2, v + dy, f"{v:.1f}", ha="center", va="bottom",
+                fontsize=fontsize, color=INK)
 
 
 def training_curves(run):
@@ -79,18 +106,17 @@ def training_curves(run):
     rows = list(csv.DictReader(open(log)))
     ep = np.array([int(r["epoch"]) for r in rows])
     g = lambda k: np.array([float(r[k]) for r in rows])  # noqa: E731
-    fig, (a, b) = plt.subplots(1, 2, figsize=(12, 4.2))
-    a.plot(ep, g("train_loss"), color=BLUE, label="train")
-    a.plot(ep, g("test_loss"), color=ORANGE, label="test")
+    fig, (a, b) = plt.subplots(1, 2, figsize=(15, 5.5))
+    a.plot(ep, g("train_loss"), color=PALETTE["blue_main"], label="train")
+    a.plot(ep, g("test_loss"), color=PALETTE["red_strong"], label="test")
     a.set(xlabel="epoch", ylabel="loss (label-smoothed CE)", title="Loss")
     a.legend()
-    b.plot(ep, 100 * g("train_acc"), color=BLUE, label="train OA")
-    b.plot(ep, 100 * g("test_acc"), color=ORANGE, label="test OA")
-    b.plot(ep, 100 * g("test_macc"), color=AQUA, label="test mAcc")
+    b.plot(ep, 100 * g("train_acc"), color=PALETTE["blue_main"], label="train OA")
+    b.plot(ep, 100 * g("test_acc"), color=PALETTE["red_strong"], label="test OA")
+    b.plot(ep, 100 * g("test_macc"), color=PALETTE["teal"], label="test mAcc")
     b.set(xlabel="epoch", ylabel="accuracy (%)", title="Accuracy", ylim=(0, 100))
     b.legend(loc="lower right")
     fig.suptitle(f"PointMLP training on ModelNet40 — {run} ({len(rows)} epochs)", fontweight="bold")
-    fig.tight_layout()
     save(fig, "training_curves.png")
 
 
@@ -99,30 +125,33 @@ def lr_schedule():
     n, lr, lo = cfg["epochs"], cfg["learning_rate"], cfg["min_lr"]
     e = np.arange(n)
     lrs = lo + (lr - lo) * (1 + np.cos(np.pi * e / n)) / 2
-    fig, ax = plt.subplots(figsize=(6.5, 3.4))
-    ax.plot(e + 1, lrs, color=BLUE)
+    fig, ax = plt.subplots(figsize=(8, 4.5))
+    ax.plot(e + 1, lrs, color=PALETTE["blue_main"], lw=3)
     ax.set(xlabel="epoch", ylabel="learning rate", title=f"Cosine LR schedule ({n} epochs)", xlim=(1, n))
-    ax.text(n * 0.98, lrs[-1] + 0.004, f"min {lo}", ha="right", color=INK2, fontsize=9)
-    ax.text(3, lr, f"start {lr}", va="bottom", color=INK2, fontsize=9)
+    ax.annotate(f"min {lo}", xy=(n, lrs[-1]), xytext=(n * 0.8, 0.03), color=INK2, fontsize=14, ha="center",
+                arrowprops=dict(arrowstyle="->", color=INK2, lw=1.5))
+    ax.text(6, lr, f"start {lr}", va="bottom", color=INK2, fontsize=14)
     save(fig, "lr_schedule.png")
 
 
 def accuracy_overview(res):
     x = np.arange(len(SETS))
     v = [100 * res[k]["OA"] for k, _, _ in SETS]
-    cols = [SUP if s == "supervised" else ZS for _, _, s in SETS]
-    fig, ax = plt.subplots(figsize=(11, 4.8))
-    bars = ax.bar(x, v, 0.62, color=cols)
-    bar_labels(ax, bars, v)
-    ax.set_xticks(x, [lab for _, lab, _ in SETS], fontsize=9.5)
-    ax.set(ylabel="overall accuracy (%)", ylim=(0, 105),
+    zs = [s == "zeroshot" for _, _, s in SETS]
+    fig, ax = plt.subplots(figsize=(15, 6.5))
+    bars = ax.bar(x, v, 0.66, color=[ZS if z else SUP for z in zs], **EDGE)
+    for b_, z in zip(bars, zs):
+        b_.set_hatch(ZS_HATCH if z else "")
+    bar_labels(ax, bars, v, fontsize=15)
+    ax.set_xticks(x, [lab for _, lab, _ in SETS], fontsize=14)
+    lo = 10 * np.floor((min(v) - 12) / 10)
+    ax.set(ylabel="overall accuracy (%)", ylim=(lo, 100),
            title="PointMLP — supervised and zero-shot accuracy")
-    ax.grid(axis="x", visible=False)
-    ax.axvline(1.5, color=MUTED, lw=1, ls=":")
+    ax.axvline(1.5, color=GRAY, lw=1.5, ls=":")
     from matplotlib.patches import Patch
-    ax.legend(handles=[Patch(color=SUP, label="supervised: complete ModelNet40 objects"),
-                       Patch(color=ZS, label="zero-shot: single-view HPR and ModelNet10")],
-              loc="upper center", bbox_to_anchor=(0.5, -0.2), ncol=2, fontsize=9.5)
+    ax.legend(handles=[Patch(facecolor=SUP, **EDGE, label="supervised: complete ModelNet40 objects"),
+                       Patch(facecolor=ZS, hatch=ZS_HATCH, **EDGE, label="zero-shot: single-view HPR and ModelNet10")],
+              loc="upper center", bbox_to_anchor=(0.5, -0.2), ncol=2, fontsize=14)
     save(fig, "accuracy_overview.png")
 
 
@@ -130,18 +159,17 @@ def pointmlp_vs_clip(res, clip):
     keys = [s for s in SETS if s[0] in clip]
     x = np.arange(len(keys))
     w = 0.38
-    fig, ax = plt.subplots(figsize=(11, 4.8))
-    for off, r, col, name in [(-w / 2, res, PMLP, "PointMLP"),
-                              (w / 2, clip, CLIPC, f"CLIP {clip['config']['clip']}")]:
+    fig, ax = plt.subplots(figsize=(15, 6.5))
+    for off, r, col, name in [(-w / 2, res, PMLP, "PointMLP (trained on ModelNet40)"),
+                              (w / 2, clip, CLIPC, f"CLIP {clip['config']['clip']} (no 3D training)")]:
         v = [100 * r[k]["OA"] for k, _, _ in keys]
-        bar_labels(ax, ax.bar(x + off, v, w - 0.03, color=col, label=name), v)
-    ax.set_xticks(x, [lab for _, lab, _ in keys], fontsize=9.5)
-    ax.set(ylabel="overall accuracy (%)", ylim=(0, 105), title="PointMLP and CLIP accuracy")
-    ax.grid(axis="x", visible=False)
-    ax.axvline(1.5, color=MUTED, lw=1, ls=":")
-    ax.text(0.5, 101, "supervised", ha="center", color=INK2, fontsize=9.5)
-    ax.text(4, 101, "zero-shot", ha="center", color=INK2, fontsize=9.5)
-    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.2), ncol=2, fontsize=9.5)
+        bar_labels(ax, ax.bar(x + off, v, w - 0.03, color=col, label=name, **EDGE), v, fontsize=12)
+    ax.set_xticks(x, [lab for _, lab, _ in keys], fontsize=14)
+    ax.set(ylabel="overall accuracy (%)", ylim=(0, 108), title="PointMLP and CLIP accuracy")
+    ax.axvline(1.5, color=GRAY, lw=1.5, ls=":")
+    ax.text(0.5, 104, "supervised", ha="center", color=INK2, fontsize=14)
+    ax.text(4, 104, "zero-shot", ha="center", color=INK2, fontsize=14)
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.2), ncol=2, fontsize=14)
     save(fig, "pointmlp_vs_clip.png")
 
 
@@ -153,17 +181,16 @@ def per_class():
     hpr = np.array([100 * float(zs[c]["hpr_1024"]) for c in names])
     order = np.argsort(full - hpr)
     y = np.arange(len(names))
-    fig, ax = plt.subplots(figsize=(7.5, 11))
-    ax.hlines(y, full[order], hpr[order], color=GRID, lw=2.5, zorder=1)
-    ax.scatter(full[order], y, s=42, color=SUP, edgecolor="white", linewidth=1.5, zorder=2,
+    fig, ax = plt.subplots(figsize=(9, 14))
+    ax.hlines(y, full[order], hpr[order], color=PALETTE["neutral"], lw=3, zorder=1)
+    ax.scatter(full[order], y, s=80, color=PALETTE["blue_main"], edgecolor="black", linewidth=1, zorder=2,
                label="supervised: complete (1024)")
-    ax.scatter(hpr[order], y, s=42, color=ZS, edgecolor="white", linewidth=1.5, zorder=3,
+    ax.scatter(hpr[order], y, s=40, color=PALETTE["red_2"], edgecolor="black", linewidth=1, zorder=3,
                label="zero-shot: HPR (1024)")
-    ax.set_yticks(y, [names[i].replace("_", " ") for i in order], fontsize=9)
+    ax.set_yticks(y, [names[i].replace("_", " ") for i in order], fontsize=13)
     ax.set(xlabel="per-class accuracy (%)", xlim=(-2, 102),
-           title="PointMLP per-class accuracy: complete vs single-view HPR\n(sorted by drop; largest drop at the bottom)")
-    ax.grid(axis="y", visible=False)
-    ax.legend(loc="lower left", bbox_to_anchor=(0, 1.04), ncol=2, fontsize=9.5)
+           title="PointMLP per-class accuracy: complete vs single-view HPR\n(sorted by drop; largest drop at the top)")
+    ax.legend(loc="lower left", fontsize=14, borderaxespad=1)
     save(fig, "per_class_complete_vs_hpr.png")
 
 
@@ -171,12 +198,12 @@ def robustness(pred, clip_pred=None):
     with h5py.File(P / "modelnet40_test_hpr_1024.h5", "r") as h:
         y, nvis, el, dense = h["label"][:, 0], h["n_visible"][:], h["elevation"][:], h.attrs["dense_points"]
     frac = 100 * nvis / dense
-    fig, axes = plt.subplots(1, 3, figsize=(15, 4.2))
+    fig, axes = plt.subplots(1, 3, figsize=(20, 6))
     ax = axes[0]
-    ax.hist(frac, bins=30, color=BLUE, edgecolor="white", linewidth=1)
+    ax.hist(frac, bins=30, color=PALETTE["blue_secondary"], edgecolor="black", linewidth=1)
     ax.set(xlabel="visible points after HPR (% of 32,768)", ylabel="objects", title="How much of each object is visible")
-    ax.axvline(np.median(frac), color=INK2, lw=1, ls="--")
-    ax.text(np.median(frac) + 1, ax.get_ylim()[1] * 0.92, f"median {np.median(frac):.0f}%", color=INK2, fontsize=9)
+    ax.axvline(np.median(frac), color=INK, lw=2, ls="--")
+    ax.text(np.median(frac) + 1.5, ax.get_ylim()[1] * 0.92, f"median {np.median(frac):.0f}%", color=INK, fontsize=14)
     series = [(pred, PMLP, "PointMLP", "o")]
     if clip_pred is not None:
         series.append((clip_pred, CLIPC, "CLIP", "s"))
@@ -189,13 +216,12 @@ def robustness(pred, clip_pred=None):
         mids = [np.median(v[g]) for g in groups]
         for pr, col, name, m in series:
             acc = [100 * np.mean(pr[g] == y[g]) for g in groups]
-            ax.plot(mids, acc, color=col, marker=m, ms=8, markeredgecolor="white", markeredgewidth=1.5, label=name)
+            ax.plot(mids, acc, color=col, marker=m, ms=10, markeredgecolor="black", markeredgewidth=1, label=name)
         ax.set(xlabel=xlabel, ylabel="accuracy on HPR 1024 (%)", ylim=(0, 100), title=title)
         ax.legend(loc="lower right")
 
     binned(axes[1], frac, 8, "visible points (%), 8 equal-size bins", "Accuracy vs visibility")
     binned(axes[2], el, 5, "camera elevation (degrees), 5 equal-size bins", "Accuracy vs camera elevation")
-    fig.tight_layout()
     save(fig, "robustness.png")
 
 
@@ -219,20 +245,20 @@ def tsne(per_class_n=25):
     Z = TSNE(n_components=2, perplexity=30, init="pca", random_state=0).fit_transform(
         F_ / np.linalg.norm(F_, axis=1, keepdims=True))
     highlight = ["airplane", "chair", "car", "guitar", "person", "lamp", "bottle", "bed"]
-    cols = [BLUE, ORANGE, AQUA, YELLOW, MAGENTA, GREEN, VIOLET, RED]
-    fig, axes = plt.subplots(1, 2, figsize=(14, 6.4))
+    cols = [PALETTE["blue_main"], PALETTE["red_strong"], PALETTE["green_3"], PALETTE["teal"], PALETTE["violet"],
+            "#EA84DD", PALETTE["blue_secondary"], PALETTE["highlight"]]
+    fig, axes = plt.subplots(1, 2, figsize=(17, 7.5))
     for ax, k, title in [(axes[0], 0, "Supervised: complete objects"), (axes[1], 1, "Zero-shot: single-view HPR")]:
         m = K == k
-        ax.scatter(Z[m, 0], Z[m, 1], s=9, color="#cfcec9", linewidths=0, label="other 32 classes")
+        ax.scatter(Z[m, 0], Z[m, 1], s=10, color=PALETTE["neutral"], alpha=0.7, linewidths=0, label="other 32 classes")
         for c, col in zip(highlight, cols):
             s = m & (Y == MODELNET40_CLASSES.index(c))
-            ax.scatter(Z[s, 0], Z[s, 1], s=26, color=col, edgecolor="white", linewidth=0.8, label=c)
+            ax.scatter(Z[s, 0], Z[s, 1], s=34, color=col, edgecolor="black", linewidth=0.5, label=c)
         ax.set_title(f"{title} ({m.sum()} objects)")
         ax.set_xticks([]), ax.set_yticks([])
-        ax.grid(False)
-    axes[1].legend(loc="center left", bbox_to_anchor=(1.01, 0.5), markerscale=1.3)
+        ax.spines[["left", "bottom"]].set_visible(False)
+    axes[1].legend(loc="center left", bbox_to_anchor=(1.01, 0.5), markerscale=1.5, fontsize=14)
     fig.suptitle("t-SNE of PointMLP global features (one shared embedding; 25 objects per class)", fontweight="bold")
-    fig.tight_layout()
     save(fig, "tsne_features.png")
 
 
@@ -250,59 +276,66 @@ def predictions(pred, set_name, title, out, n=24, seed=1):
         draw_points(ax, p, Camera(cam[i]), p.min(0), np.ptp(p, 0), size=2.5)
         ok = pred[i] == y[i]
         t, pr = MODELNET40_CLASSES[y[i]].replace("_", " "), MODELNET40_CLASSES[pred[i]].replace("_", " ")
-        ax.set_title(f"{'✓' if ok else '✗'} true: {t}\npred: {pr}", fontsize=10, color=INK if ok else RED,
-                     fontweight="normal")
+        ax.set_title(f"{'✓' if ok else '✗'} true: {t}\npred: {pr}", fontsize=12,
+                     color=INK if ok else PALETTE["red_strong"], fontweight="normal")
     fig.suptitle(f"{title} — {np.sum(pred[idx] == y[idx])}/{n} correct on this random sample "
-                 f"(whole test set: {100 * np.mean(pred == y):.1f}%)", fontweight="bold", y=0.985)
-    save(fig, out)
+                 f"(whole test set: {100 * np.mean(pred == y):.1f}%)", fontweight="bold", fontsize=17, y=0.985)
+    OUT.mkdir(parents=True, exist_ok=True)
+    for ext in ("png", "pdf"):                         # fixed layout (subplots_adjust), no tight_layout
+        fig.savefig(OUT / f"{Path(out).stem}.{ext}", dpi=300, bbox_inches="tight", pad_inches=0.08)
+    plt.close(fig)
+    print("saved", OUT / out)
 
 
 def removal_curves(res, clip):
     ratios = [0, 10, 20, 30, 40, 50]
-    fig, axes = plt.subplots(1, 2, figsize=(12, 4.6), sharey=True)
+    fig, axes = plt.subplots(1, 2, figsize=(15, 6.8), sharey=True, layout="constrained")
     for ax, ds in zip(axes, ["modelnet40", "modelnet10"]):
         for model, r_, col in [("PointMLP", res, PMLP), (f"CLIP {clip['config']['clip']}", clip, CLIPC)]:
             for removal, ls, mk in [("uniform", "-", "o"), ("contiguous", "--", "s")]:
                 keys = [f"{ds}/full_1024"] + [f"{ds}/removal_{removal}_{r}" for r in ratios[1:]]
                 if not all(k in r_ for k in keys):
                     continue
-                ax.plot(ratios, [100 * r_[k]["OA"] for k in keys], color=col, ls=ls, marker=mk, ms=6,
-                        markeredgecolor="white", markeredgewidth=1.2, label=f"{model}, {removal}")
+                ax.plot(ratios, [100 * r_[k]["OA"] for k in keys], color=col, ls=ls, marker=mk, ms=9,
+                        markeredgecolor="black", markeredgewidth=1, label=f"{model}, {removal}")
         ax.set_title("ModelNet40" if ds == "modelnet40" else "ModelNet10")
         ax.set_xticks(ratios, [f"{r}%" for r in ratios])
         ax.set_xlabel("points removed")
         ax.set_ylim(0, 100)
     axes[0].set_ylabel("overall accuracy (%)")
     handles, labels = axes[0].get_legend_handles_labels()
-    fig.legend(handles, labels, loc="lower center", ncol=4, fontsize=9.5, bbox_to_anchor=(0.5, -0.02))
     fig.suptitle("Random point removal: uniform and contiguous", fontweight="bold")
-    fig.tight_layout(rect=(0, 0.06, 1, 1))
+    fig.legend(handles, labels, loc="outside lower center", ncol=2, fontsize=14)
     save(fig, "removal_curves.png")
 
 
 TTA_METHODS = ["source_only", "bn_adapt", "tent", "shot_im", "t3a", "bn_t3a", "sar"]
 TTA_LABEL = {"source_only": "Source only", "bn_adapt": "BN-adapt", "tent": "TENT", "shot_im": "SHOT-IM",
              "t3a": "T3A", "bn_t3a": "BN+T3A", "sar": "SAR"}
-TTA_COLOR = {"source_only": "#5f5e5a", "bn_adapt": BLUE, "tent": ORANGE, "shot_im": AQUA, "t3a": YELLOW,
-             "bn_t3a": MAGENTA, "sar": GREEN}
+TTA_COLOR = {"source_only": PALETTE["neutral"], "bn_adapt": PALETTE["blue_secondary"], "tent": PALETTE["blue_main"],
+             "shot_im": PALETTE["green_3"], "t3a": PALETTE["teal"], "bn_t3a": PALETTE["violet"],
+             "sar": PALETTE["red_strong"]}
+TTA_HATCH = {"source_only": "", "bn_adapt": "", "tent": "//", "shot_im": "\\\\", "t3a": "..", "bn_t3a": "xx",
+             "sar": ""}
 SONN = {"obj_only": "OBJ_ONLY", "obj_bg": "OBJ_BG", "pb_t50_rs": "PB_T50_RS"}
 def tta_scanobjectnn(t):
     x = np.arange(len(SONN))
     w = 0.12
-    fig, ax = plt.subplots(figsize=(12, 4.8))
+    fig, ax = plt.subplots(figsize=(17, 6.5))
+    allv = [100 * t[s][m]["OA"] for s in SONN for m in TTA_METHODS]
+    lo = 5 * np.floor((min(allv) - 8) / 5)
     for k, m in enumerate(TTA_METHODS):
         v = [100 * t[s][m]["OA"] for s in SONN]
         e = [100 * t[s][m]["OA_std"] for s in SONN]
-        bars = ax.bar(x + (k - 3) * w, v, w - 0.012, yerr=e, color=TTA_COLOR[m], label=TTA_LABEL[m],
-                      error_kw=dict(ecolor=INK2, lw=0.8, capsize=2))
-        for b_, val in zip(bars, v):
-            ax.text(b_.get_x() + b_.get_width() / 2, val + 1.6, f"{val:.1f}", ha="center", fontsize=7, color=INK,
-                    rotation=90)
-    ax.set_xticks(x, list(SONN.values()))
-    ax.set(ylabel="overall accuracy (%)", ylim=(0, 72),
+        bars = ax.bar(x + (k - 3) * w, v, w - 0.012, yerr=e, color=TTA_COLOR[m], hatch=TTA_HATCH[m],
+                      label=TTA_LABEL[m], error_kw=dict(ecolor=INK, lw=1.2, capsize=3), **EDGE)
+        for b_, val, err in zip(bars, v, e):
+            ax.text(b_.get_x() + b_.get_width() / 2, val + err + 0.6, f"{val:.1f}", ha="center", va="bottom",
+                    fontsize=11, color=INK, rotation=90)
+    ax.set_xticks(x, list(SONN.values()), fontsize=15)
+    ax.set(ylabel="overall accuracy (%)", ylim=(lo, 5 * np.ceil((max(allv) + 6) / 5)),
            title="ModelNet40 → ScanObjectNN (11 shared classes): test-time adaptation")
-    ax.grid(axis="x", visible=False)
-    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.1), ncol=7, fontsize=9.5)
+    ax.legend(loc="upper center", bbox_to_anchor=(0.5, -0.1), ncol=7, fontsize=14, handlelength=1.6)
     save(fig, "tta_scanobjectnn.png")
 
 
@@ -311,17 +344,21 @@ def tta_gains(t):
     G = np.array([[100 * t[s][m]["gain"] for m in methods] for s in SONN])
     sig = np.array([[t[s][m]["gain_lo"] > 0 or t[s][m]["gain_hi"] < 0 for m in methods] for s in SONN])
     lim = np.abs(G).max()
-    fig, ax = plt.subplots(figsize=(9, 2.9))
-    im = ax.imshow(G, cmap="RdBu", vmin=-lim, vmax=lim, aspect="auto")
+    from matplotlib.colors import LinearSegmentedColormap
+    cmap = LinearSegmentedColormap.from_list(
+        "gain", [PALETTE["red_strong"], PALETTE["red_1"], "#FFFFFF", "#C9DCF0", PALETTE["blue_main"]])
+    fig, ax = plt.subplots(figsize=(12, 4.2))
+    im = ax.imshow(G, cmap=cmap, vmin=-lim, vmax=lim, aspect="auto")
     for i in range(G.shape[0]):
         for j in range(G.shape[1]):
-            ax.text(j, i, f"{G[i, j]:+.1f}{'*' if sig[i, j] else ''}", ha="center", va="center", fontsize=10,
+            ax.text(j, i, f"{G[i, j]:+.1f}{'*' if sig[i, j] else ''}", ha="center", va="center", fontsize=15,
                     color="white" if abs(G[i, j]) > 0.6 * lim else INK)
     ax.set_xticks(range(len(methods)), [TTA_LABEL[m] for m in methods])
     ax.set_yticks(range(len(SONN)), list(SONN.values()))
     ax.xaxis.tick_top()
-    ax.grid(False)
-    fig.colorbar(im, fraction=0.04, pad=0.02, label="gain (points)")
+    ax.tick_params(length=0)
+    ax.spines[["left", "bottom"]].set_visible(False)
+    fig.colorbar(im, fraction=0.04, pad=0.02, label="gain (points)").outline.set_linewidth(1)
     ax.set_title("ScanObjectNN: accuracy gain over source only (* = 95% CI excludes 0)", pad=28)
     save(fig, "tta_gains.png")
 
