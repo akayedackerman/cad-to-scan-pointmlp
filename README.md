@@ -136,7 +136,7 @@ python scripts/make_hpr_testset.py      # HPR test sets
 python scripts/make_removal_sets.py     # random point removal test sets
 python scripts/prepare_scanobjectnn.py  # ScanObjectNN test sets (11 classes, Z-up)
 python scripts/visualize.py             # figures
-python scripts/visualize_select.py      # figure of your choice (asks for dataset, objects, figure, style, camera)
+python scripts/visualize_select.py      # figure of your choice, shown live or saved (asks for dataset, objects, figure, style, camera, output)
 python scripts/test_supervised.py       # supervised evaluation
 python scripts/test_zeroshot.py         # zero-shot evaluation (HPR, ModelNet10, random point removal)
 python scripts/test_zeroshot_clip.py    # CLIP
@@ -175,6 +175,14 @@ At start, each script prints the configuration it uses. All its output is then w
 2026-11-15 16:21:02 | INFO  | prepare_data  (config: configs/data.yaml, section: modelnet)
 2026-11-15 16:21:02 | INFO  |   {dense_points: 32768, train_points: 2048, workers: 16, force: false}
 2026-11-15 16:22:14 | INFO  | modelnet40: 2468 objects | visible 11781 / 32768 points on average (36.0%; ...)
+```
+
+Long test runs also log their progress. `test_tta.py`, for example, writes one line per test set, seed and method,
+then the mean over seeds:
+
+```
+[ 1/63] obj_only  seed 0  source_only  OA  ...  mAcc  ...  (1.2s)
+obj_only   mean OA over seeds: source_only 48.2  bn_adapt 50.8  tent 51.4  ...  (85s)
 ```
 
 Training logs go to `outputs/training/<run_name>/` (see [Training](#training)).
@@ -244,6 +252,19 @@ Figures (`scripts/visualize.py`, colour and greyscale):
 `scripts/visualize_select.py` builds the same figures for objects you choose; all options can also be given as flags, e.g.
 `python scripts/visualize_select.py --dataset modelnet40 --objects chair piano_0232 --figure hpr --style both --views auto 40,20`.
 
+Instead of saving, the figure can be shown live with `--output` (asked interactively, default `window`; needs a display):
+
+| `--output` | Result |
+|---|---|
+| `window` | the figure in a window (zoom, pan, save button); nothing is written |
+| `3d` | rotatable 3-D view of the same clouds (Open3D): drag to rotate, wheel to zoom, `+`/`-` point size, `Q` to close |
+| `save` | `outputs/figures/custom/<name>_<style>.png` (default when `--objects` is given) |
+
+```bash
+python scripts/visualize_select.py --dataset modelnet40 --objects chair airplane --figure hpr --style spatial --views auto --output 3d
+python scripts/visualize_select.py --dataset modelnet40 --objects chair --figure removal --ratios 10 30 50 --style spatial --views auto --output window
+```
+
 | File (`data/processed/`) | Content |
 |---|---|
 | `modelnet40_train_2048.h5` | 9843 × 2048 |
@@ -262,7 +283,7 @@ configs/      data.yaml, train.yaml, test.yaml (data preparation, training, test
 environment.yml, requirements.txt   dependencies
 CITATIONS.bib                        BibTeX of the methods and datasets used
 scripts/      data and checkpoint download, data preparation, visualisation, training, testing, plots
-src/          model, data utilities, evaluation, CLIP classifier, test-time adaptation, rendering, configuration
+src/          model, data utilities, evaluation, CLIP classifier, test-time adaptation, rendering, live 3-D viewer, configuration
 notebooks/    workshop notebook
 reference/    pointnet2_ops CUDA extension from the PointMLP repository (Apache-2.0)
 docs/         figures shown in this README

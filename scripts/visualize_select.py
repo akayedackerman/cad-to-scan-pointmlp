@@ -8,8 +8,14 @@ Every question can also be answered with a flag, e.g.
   python scripts/visualize_select.py --dataset modelnet40 --objects chair airplane_0627 \\
       --figure hpr --style both --views auto 40,20 --name my_figure
 
+Output (--output)
+  window    show the figure live in a window, nothing is saved
+  3d        live, rotatable 3-D view of the same clouds (mouse to rotate and zoom), nothing is saved
+  save      write outputs/figures/custom/<name>_<style>.png
+
+  python scripts/visualize_select.py --dataset modelnet40 --objects chair --figure hpr --style spatial --output 3d
+
 Usage: python scripts/visualize_select.py
-Output: outputs/figures/custom/<name>_<style>.png
 """
 import argparse
 import sys
@@ -109,6 +115,8 @@ def main():
     ap.add_argument("--ratios", nargs="+", type=int, help="removal ratios in %% (removal figure)")
     ap.add_argument("--style", choices=["spatial", "gray", "both"])
     ap.add_argument("--views", nargs="+", help="per object: auto or azimuth,elevation (e.g. 40,20)")
+    ap.add_argument("--output", choices=["window", "3d", "save"],
+                    help="show live in a window, live rotatable 3-D view, or save PNG (default with --objects: save)")
     ap.add_argument("--name", help="output file name (without extension)")
     a = ap.parse_args()
 
@@ -124,7 +132,9 @@ def main():
         views = (a.views * len(paths))[:len(paths)]
     else:
         views = [ask(f"Camera for {p.stem} (auto or azimuth,elevation)", default="auto") for p in paths]
-    name = a.name or ask("File name", default=f"{figure}_{dataset}_{'_'.join(p.stem for p in paths)}")
+    output = a.output or ("save" if a.objects else ask("Output", ["window", "3d", "save"], default=1))
+    name = (a.name or ask("File name", default=f"{figure}_{dataset}_{'_'.join(p.stem for p in paths)}")
+            if output == "save" else None)
 
     objs, labels = [], []
     for p, v in zip(paths, views):
@@ -135,8 +145,20 @@ def main():
         print(f"  {p.stem}: azimuth {o['az']:.0f}, elevation {o['el']:.0f}, {len(o['visible'])} visible points")
 
     styles = ["spatial", "gray"] if style == "both" else [style]
+    if output == "3d":
+        import viewer3d
+        if figure == "hpr":
+            columns = hpr_figure.COLUMNS
+            rows = [(lab, o, ["mesh", o["points"], o["points"][o["visible"]], o["points"][o["i2048"]],
+                              o["points"][o["i1024"]]]) for lab, o in zip(labels, objs)]
+        else:
+            columns = ["Complete (1024)"] + [f"Uniform {r}%" for r in ratios] + [f"Contiguous {r}%" for r in ratios]
+            rows = [(lab, o, removal_clouds(o, ratios)) for lab, o in zip(labels, objs)]
+        for st in styles:
+            viewer3d.show(rows, columns, gray=st == "gray", title=f"{figure} - {st} - close the window to continue")
+        return
     for st in styles:
-        out = OUT / f"{name}_{st}.png"
+        out = OUT / f"{name}_{st}.png" if output == "save" else None
         if figure == "hpr":
             hpr_figure.figure(objs, labels, out, gray=st == "gray")
         else:

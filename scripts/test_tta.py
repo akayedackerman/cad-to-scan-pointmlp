@@ -71,21 +71,28 @@ if __name__ == "__main__":
     if "source_only" not in a.methods:
         a.methods = ["source_only"] + a.methods     # reference for the gains
     model = load_pointmlp(ROOT / a.checkpoint)
+    print(f"model loaded: {a.checkpoint}")
+    total, done = len(a.variants) * len(a.seeds) * len(a.methods), 0
     rows, correct = [], {}
     for name in a.variants:
         t0 = time.time()
         for seed in a.seeds:
             X, y = load(name, seed, a.num_points)
+            print(f"{name}  seed {seed}: {len(X)} objects, {a.num_points} points each")
             order = np.random.default_rng(seed).permutation(len(X))
             torch.manual_seed(seed)
             for method in a.methods:
+                t1 = time.time()
                 pred = run(Adapter(model, method, GROUPS, a.hparams), X, order, a.batch_size)
                 r = summarize(y, pred, len(GROUPS))
                 rows.append(dict(test_set=name, method=method, seed=seed, OA=r["OA"], mAcc=r["mAcc"], n=r["n"]))
                 correct.setdefault((name, method), []).append((pred == y).astype(float))
+                done += 1
+                print(f"  [{done:>2}/{total}] {name:9s} seed {seed}  {method:11s}  OA {100 * r['OA']:5.1f}  "
+                      f"mAcc {100 * r['mAcc']:5.1f}  ({time.time() - t1:.1f}s)")
         oa = {m: np.mean([x["OA"] for x in rows if x["test_set"] == name and x["method"] == m]) for m in a.methods}
-        print(f"{name:10s} " + "  ".join(f"{m} {100 * v:5.1f}" for m, v in oa.items())
-              + f"  ({time.time() - t0:.0f}s)", flush=True)
+        print(f"{name:10s} mean OA over seeds: " + "  ".join(f"{m} {100 * v:5.1f}" for m, v in oa.items())
+              + f"  ({time.time() - t0:.0f}s)")
 
     R.mkdir(parents=True, exist_ok=True)
     with open(R / "tta_results.csv", "w", newline="") as f:

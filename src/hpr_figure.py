@@ -111,6 +111,17 @@ def colours(p, n, o, gray):
     return np.clip(c * shade[:, None], 0, 1)
 
 
+def finish(fig, out):
+    """Save the figure to out, or show it in a window when out is None (returns when the window is closed)."""
+    if out is None:
+        plt.show()
+    else:
+        out.parent.mkdir(parents=True, exist_ok=True)
+        fig.savefig(out, dpi=250, facecolor="white")
+        print("saved", out)
+    plt.close(fig)
+
+
 def figure(objects, labels, out, gray=False, title=None):
     plt.rcParams.update({"font.family": "DejaVu Serif", "font.size": 10})
     rows = len(objects)
@@ -161,10 +172,7 @@ def figure(objects, labels, out, gray=False, title=None):
     fig.legend(handles=[handle], loc="lower center", bbox_to_anchor=(0.52, 0.0), frameon=False, fontsize=9.5)
     if title:
         fig.suptitle(title)
-    out.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(out, dpi=250, facecolor="white")
-    plt.close(fig)
-    print("saved", out)
+    finish(fig, out)
 
 
 def point_grid(rows, columns, out, gray=False, sizes=None):
@@ -207,10 +215,7 @@ def point_grid(rows, columns, out, gray=False, sizes=None):
     for c, t in enumerate(columns):
         box = gs[0, c].get_position(fig)
         fig.text((box.x0 + box.x1) / 2, 1 - 0.2 / fig.get_figheight(), t, ha="center", va="center", fontsize=10.5)
-    out.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(out, dpi=250, facecolor="white")
-    plt.close(fig)
-    print("saved", out)
+    finish(fig, out)
 
 
 def scan_grid(clouds, labels, columns, out, gray=False, elevation=20.0):
@@ -241,10 +246,7 @@ def scan_grid(clouds, labels, columns, out, gray=False, elevation=20.0):
     for c, t in enumerate(columns):
         box = gs[0, c].get_position(fig)
         fig.text((box.x0 + box.x1) / 2, 1 - 0.2 / fig.get_figheight(), t, ha="center", va="center", fontsize=10.5)
-    out.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(out, dpi=250, facecolor="white")
-    plt.close(fig)
-    print("saved", out)
+    finish(fig, out)
 
 
 def gallery(objects, titles, out, kind="complete", gray=False, ncols=8, title=None):
@@ -279,7 +281,4 @@ def gallery(objects, titles, out, kind="complete", gray=False, ncols=8, title=No
         ax.set_title(t, fontsize=10, pad=2)
     if title:
         fig.suptitle(title, fontsize=13, y=1 - 0.25 / fig.get_figheight())
-    out.parent.mkdir(parents=True, exist_ok=True)
-    fig.savefig(out, dpi=250, facecolor="white")
-    plt.close(fig)
-    print("saved", out)
+    finish(fig, out)

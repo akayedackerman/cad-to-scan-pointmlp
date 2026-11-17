@@ -11,6 +11,7 @@ scikit-learn
 pandas
 plotly
 pillow
+open3d          # live 3-D view (visualize_select.py --output 3d)
 pygments
 jupyter
 ipykernel
