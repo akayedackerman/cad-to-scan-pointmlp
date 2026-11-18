@@ -283,7 +283,7 @@ python scripts/visualize_select.py --dataset modelnet40 --objects chair --figure
 ```
 configs/      data.yaml, train.yaml, test.yaml (data preparation, training, testing)
 environment.yml, requirements.txt   dependencies
-CITATIONS.bib                        BibTeX of the methods and datasets used
+references.bib                       BibTeX of the methods and datasets used
 scripts/      data and checkpoint download, data preparation, visualisation, training, testing, plots
 src/          model, data utilities, evaluation, CLIP classifier, test-time adaptation, rendering, live 3-D viewer, configuration
 notebooks/    workshop notebook
@@ -295,7 +295,7 @@ outputs/      figures, plots, logs and results written by the scripts (not track
 
 ## Citation
 
-This project builds on the following work. If you use it, please cite them (BibTeX in [`CITATIONS.bib`](CITATIONS.bib)).
+This project builds on the following work. If you use it, please cite them (BibTeX in [`references.bib`](references.bib)).
 
 | Used for | Reference |
 |---|---|
