@@ -9,8 +9,6 @@ Workshop material for 3D object classification on ModelNet40 with PointMLP.
 - Model training
 - Model testing (supervised and zero-shot) and test-time adaptation (ModelNet40 → ScanObjectNN)
 
-Workshop slides: [slides/Point_Cloud_Classification_Workshop_SUES.pptx](slides/Point_Cloud_Classification_Workshop_SUES.pptx) (27 slides, with speaker notes).
-
 ![HPR examples](docs/figures/hpr_car_armadillo_bunny_piano_spatial.png)
 
 ## Results
@@ -289,7 +287,6 @@ src/          model, data utilities, evaluation, CLIP classifier, test-time adap
 notebooks/    workshop notebook
 reference/    pointnet2_ops CUDA extension from the PointMLP repository (Apache-2.0)
 docs/         figures shown in this README
-slides/       workshop slide deck (PPTX)
 outputs/      figures, plots, logs and results written by the scripts (not tracked)
 ```
 
