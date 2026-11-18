@@ -3,8 +3,8 @@ message: "If you use this software or workshop material, please cite it as below
 title: "Point Cloud Classification Under Distribution Shift: Partial Views, Missing Points and Real Scans"
 type: software
 authors:
-  - given-names: "Akayed Md. Mazharul"
-    family-names: "Islam"
+  - given-names: "Md. Mazharul Islam"
+    family-names: "Akayed"
     affiliation: "Shanghai University of Engineering Science"
 repository-code: "https://github.com/akayedackerman/cad-to-scan-pointmlp"
 url: "https://github.com/akayedackerman/cad-to-scan-pointmlp"
