@@ -284,6 +284,7 @@ python scripts/visualize_select.py --dataset modelnet40 --objects chair --figure
 configs/      data.yaml, train.yaml, test.yaml (data preparation, training, testing)
 environment.yml, requirements.txt   dependencies
 references.bib                       BibTeX of the methods and datasets used
+CITATION.cff                         how to cite this repository
 scripts/      data and checkpoint download, data preparation, visualisation, training, testing, plots
 src/          model, data utilities, evaluation, CLIP classifier, test-time adaptation, rendering, live 3-D viewer, configuration
 notebooks/    workshop notebook

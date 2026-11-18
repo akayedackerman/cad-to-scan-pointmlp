@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use this software or workshop material, please cite it as below."
+title: "Point Cloud Classification Under Distribution Shift: Partial Views, Missing Points and Real Scans"
+type: software
+authors:
+  - given-names: "Akayed Md. Mazharul"
+    family-names: "Islam"
+    affiliation: "Shanghai University of Engineering Science"
+repository-code: "https://github.com/akayedackerman/cad-to-scan-pointmlp"
+url: "https://github.com/akayedackerman/cad-to-scan-pointmlp"
+abstract: >-
+  Workshop project on 3D point cloud classification with PointMLP trained on ModelNet40 and
+  tested under distribution shift: single-view partial clouds (Hidden Point Removal), random
+  point removal and ScanObjectNN real scans, with zero-shot CLIP and test-time adaptation.
+keywords:
+  - point cloud classification
+  - PointMLP
+  - ModelNet40
+  - ScanObjectNN
+  - distribution shift
+  - test-time adaptation
+license: MIT
+date-released: "2026-11-15"
