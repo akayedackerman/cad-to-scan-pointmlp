@@ -12,8 +12,6 @@ data/processed/
 
 # generated outputs (figures, plots, logs, results, training runs)
 outputs/
-outputs/slides/
-slides/
 
 # slide material (screenshots, figures and tables for the presentation)
 scripts/make_screenshots.py
